@@ -18,6 +18,12 @@ BINARIES = {
   ],
   'darwin': [
     'libapi_gen_util.a',
+    'libautofill_content_browser.a',
+    'libautofill_content_common.a',
+    'libautofill_content_mojo_bindings.a',
+    'libautofill_content_renderer.a',
+    'libautofill_core_browser.a',
+    'libautofill_core_common.a',
     'libbrowsing_data.a',
     'libchrome_api.a',
     'libchrome_zlib.a',
@@ -32,6 +38,7 @@ BINARIES = {
     'libextensions_common_constants.a',
     'libextensions_renderer.a',
     'libextensions_utility.a',
+    'libgoogle_apis.a',
     'libguest_view_browser.a',
     'libguest_view_common.a',
     'libguest_view_renderer.a',
@@ -53,6 +60,12 @@ BINARIES = {
   ],
   'linux': [
     'libapi_gen_util.a',
+    'libautofill_content_browser.a',
+    'libautofill_content_common.a',
+    'libautofill_content_mojo_bindings.a',
+    'libautofill_content_renderer.a',
+    'libautofill_core_browser.a',
+    'libautofill_core_common.a',
     'libbrowsing_data.a',
     'libchrome_api.a',
     'libchrome_zlib.a',
@@ -67,6 +80,7 @@ BINARIES = {
     'libextensions_common_constants.a',
     'libextensions_renderer.a',
     'libextensions_utility.a',
+    'libgoogle_apis.a',
     'libguest_view_browser.a',
     'libguest_view_common.a',
     'libguest_view_renderer.a',
@@ -123,31 +137,39 @@ BINARIES = {
 }
 
 INCLUDE_DIRS = [
+  'chrome/browser/autofill',
+  'chrome/browser/ui/autofill',
   'extensions/browser',
   'extensions/common',
   'extensions/components',
   'extensions/renderer',
   'extensions/strings',
   'extensions/utility',
+  'sql',
   'sync/api',
   'sync/base',
   'sync/internal_api',
+  'third_party/protobuf',
+  'components/autofill',
   'components/content_settings',
   'components/user_prefs',
   'components/pref_registry',
   'components/syncable_prefs',
   'components/keyed_service',
   'components/web_modal',
+  'components/webdata',
   'components/crx_file',
   'components/ui'
 ]
 GENERATED_INCLUDE_DIRS = [
   'chrome',
+  'components/autofill',
   'extensions',
   'services',
 ]
 OTHER_HEADERS = [
   'chrome/common/chrome_isolated_world_ids.h',
+  'chrome/browser/web_data_service_factory.h',
 ]
 OTHER_DIRS = [
   'build',
