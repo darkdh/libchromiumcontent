@@ -19,6 +19,7 @@ BINARIES = {
     'libphonenumber_without_metadata.a',
     'libsignin_core_browser.a',
     'libsignin_core_common.a',
+    'libversion_info.a',
   ],
   'linux': [
     'libaddressinput_util.a',
@@ -36,6 +37,7 @@ BINARIES = {
     'libphonenumber_without_metadata.a',
     'libsignin_core_browser.a',
     'libsignin_core_common.a',
+    'libversion_info.a',
   ],
   'win32': [
     os.path.join('obj', 'third_party', 'libaddressinput', 'libaddressinput_util.lib'),
@@ -53,6 +55,7 @@ BINARIES = {
     os.path.join('obj', 'third_party', 'libphonenumber', 'libphonenumber_without_metadata.lib'),
     os.path.join('obj', 'components', 'signin_core_browser.lib'),
     os.path.join('obj', 'components', 'signin_core_common.lib'),
+    os.path.join('obj', 'components', 'version_info.lib'),
   ],
 }
 

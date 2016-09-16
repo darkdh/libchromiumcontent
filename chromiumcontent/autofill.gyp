@@ -17,6 +17,7 @@
         '<(DEPTH)/components/components.gyp:os_crypt',
         '<(DEPTH)/components/components.gyp:signin_core_browser',
         '<(DEPTH)/components/components.gyp:signin_core_common',
+        '<(DEPTH)/components/components.gyp:version_info',
         '<(DEPTH)/components/components.gyp:webdata_common',
         '<(DEPTH)/third_party/libaddressinput/libaddressinput.gyp:libaddressinput_util',
         '<(DEPTH)/third_party/libphonenumber/libphonenumber.gyp:libphonenumber',

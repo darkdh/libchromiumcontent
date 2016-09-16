@@ -21,7 +21,7 @@
         '<(DEPTH)/components/components.gyp:policy_component_common',
         '<(DEPTH)/components/components.gyp:pref_registry',
         '<(DEPTH)/components/components.gyp:syncable_prefs',
-        '<(DEPTH)/components/components.gyp:ui_zoom',
+        '<(DEPTH)/components/components.gyp:zoom',
         '<(DEPTH)/components/components.gyp:url_matcher',
         '<(DEPTH)/components/components.gyp:user_prefs',
         '<(DEPTH)/components/components.gyp:web_cache_browser',
@@ -36,7 +36,7 @@
         '<(DEPTH)/extensions/extensions.gyp:extensions_utility',
         '<(DEPTH)/extensions/extensions_resources.gyp:extensions_resources',
         '<(DEPTH)/extensions/extensions_strings.gyp:extensions_strings',
-        '<(DEPTH)/third_party/cld_2/cld_2.gyp:cld2_platform_impl',
+        '<(DEPTH)/third_party/cld_2/cld_2.gyp:cld_2',
       ],
       'conditions': [
         ['OS=="win" or OS=="mac"', {
