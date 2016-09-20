@@ -9,6 +9,7 @@
         'extensions.gyp:extensions',
         'autofill.gyp:autofill',
         'importer.gyp:importer',
+        'update_client.gyp:update_client',
       ],
       'conditions': [
         ['OS=="linux"', {

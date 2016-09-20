@@ -4,11 +4,21 @@ import lib.extensions
 from lib.extensions import copy_extension_locales
 import lib.autofill
 import lib.importer
+import lib.update_client
 
 BINARIES = lib.extensions.BINARIES
-BINARIES['darwin'] = BINARIES['darwin'] + lib.autofill.BINARIES['darwin'] + lib.importer.BINARIES['darwin']
-BINARIES['linux'] = BINARIES['linux'] + lib.autofill.BINARIES['linux'] + lib.importer.BINARIES['linux']
-BINARIES['win32'] = BINARIES['win32'] + lib.autofill.BINARIES['win32'] + lib.importer.BINARIES['win32']
+BINARIES['darwin'] = (BINARIES['darwin'] + 
+  lib.autofill.BINARIES['darwin'] +
+  lib.importer.BINARIES['darwin'] +
+  lib.update_client.BINARIES['darwin'])
+BINARIES['linux'] = (BINARIES['linux'] + 
+  lib.autofill.BINARIES['linux'] +
+  lib.importer.BINARIES['linux'] +
+  lib.update_client.BINARIES['linux'])
+BINARIES['win32'] = (BINARIES['win32'] + 
+  lib.autofill.BINARIES['win32'] +
+  lib.importer.BINARIES['win32'] +
+  lib.update_client.BINARIES['win32'])
 
 INCLUDE_DIRS = lib.extensions.INCLUDE_DIRS + lib.autofill.INCLUDE_DIRS + lib.importer.INCLUDE_DIRS
 GENERATED_INCLUDE_DIRS = lib.extensions.GENERATED_INCLUDE_DIRS + lib.autofill.GENERATED_INCLUDE_DIRS + lib.importer.GENERATED_INCLUDE_DIRS
