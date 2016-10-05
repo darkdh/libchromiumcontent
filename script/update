@@ -20,7 +20,7 @@ CHROMIUMCONTENT_SOURCE_DIR = os.path.join(SOURCE_ROOT, 'chromiumcontent')
 CHROMIUMCONTENT_DESTINATION_DIR = os.path.join(SRC_DIR, 'chromiumcontent')
 COMPONENTS = ['static_library', 'shared_library', 'ffmpeg']
 
-TARBALL_REPO = 'brave/chromium-source-tarball'
+TARBALL_REPO = 'zcbenz/chromium-source-tarball'
 TARBALL_URL = 'https://github.com/{0}/releases/download/{1}/chromium-{1}.tar.xz'
 
 
@@ -121,7 +121,7 @@ def gyp_env(target_arch, component, gyp_defines):
   else:
     gyp_defines += ' ffmpeg_branding=Chrome component={0}'.format(component)
 
-  env['GYP_GENERATORS'] = 'ninja'
+  env['GYP_GENERATORS'] = 'ninja,xcode-ninja'
 
   if sys.platform in ['win32', 'cygwin']:
     # Do not let Chromium download their own toolchains.
