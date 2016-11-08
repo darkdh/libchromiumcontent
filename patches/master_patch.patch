@@ -1,3 +1,24 @@
+diff --git a/build/toolchain/mac/BUILD.gn b/build/toolchain/mac/BUILD.gn
+index 0c00e99..e565111 100644
+--- a/build/toolchain/mac/BUILD.gn
++++ b/build/toolchain/mac/BUILD.gn
+@@ -210,13 +210,15 @@ template("mac_toolchain") {
+     }
+ 
+     tool("alink") {
++      rspfile = "{{output}}.rsp"
+       script =
+           rebase_path("//build/toolchain/mac/filter_libtool.py", root_build_dir)
+-      command = "rm -f {{output}} && TOOL_VERSION=${tool_versions.filter_libtool} python $script libtool -static {{arflags}} -o {{output}} {{inputs}}"
++      command = "rm -f {{output}} && TOOL_VERSION=${tool_versions.filter_libtool} python $script libtool -static {{arflags}} -o {{output}} -filelist \"$rspfile\""
+       description = "LIBTOOL-STATIC {{output}}"
+       outputs = [
+         "{{output_dir}}/{{target_output_name}}{{output_extension}}",
+       ]
++      rspfile_content = "{{inputs_newline}}"
+       default_output_dir = "{{target_out_dir}}"
+       default_output_extension = ".a"
+       output_prefix = "lib"
 diff --git a/build/util/branding.gni b/build/util/branding.gni
 index c38d2a9..d1cd1a1 100644
 --- a/build/util/branding.gni
@@ -5,7 +26,7 @@ index c38d2a9..d1cd1a1 100644
 @@ -19,7 +19,7 @@ _branding_dictionary_template = "full_name = \"@PRODUCT_FULLNAME@\" " +
                                  "bundle_id = \"@MAC_BUNDLE_ID@\" " +
                                  "creator_code = \"@MAC_CREATOR_CODE@\" "
-
+ 
 -_branding_file = "//chrome/app/theme/$branding_path_component/BRANDING"
 +_branding_file = "//chrome/app/theme/brave/BRANDING"
  _result = exec_script("version.py",
@@ -22,7 +43,7 @@ index 80378a8..903fabb 100644
 +  chrome_product_full_name = "Google Chrome"
 +  chrome_product_short_name = "Google Chrome"
  }
-
+ 
  if (is_win) {
 diff --git a/chrome/VERSION b/chrome/VERSION
 index 68b2017..fe069b0 100644
@@ -34,14 +55,420 @@ index 68b2017..fe069b0 100644
  BUILD=2840
 -PATCH=58
 +PATCH=59
+diff --git a/chrome/browser/extensions/api/messaging/message_service.cc b/chrome/browser/extensions/api/messaging/message_service.cc
+index 0f8d9d8..e29ec83 100644
+--- a/chrome/browser/extensions/api/messaging/message_service.cc
++++ b/chrome/browser/extensions/api/messaging/message_service.cc
+@@ -8,6 +8,7 @@
+ #include <limits>
+ #include <utility>
+ 
++#include "atom/browser/extensions/tab_helper.h"
+ #include "base/atomic_sequence_num.h"
+ #include "base/bind.h"
+ #include "base/callback.h"
+@@ -18,7 +19,7 @@
+ #include "base/stl_util.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/extensions/api/messaging/extension_message_port.h"
+-#include "chrome/browser/extensions/api/messaging/incognito_connectability.h"
++// #include "chrome/browser/extensions/api/messaging/incognito_connectability.h"
+ #include "chrome/browser/extensions/api/messaging/native_message_port.h"
+ #include "chrome/browser/extensions/api/tabs/tabs_constants.h"
+ #include "chrome/browser/extensions/extension_service.h"
+@@ -332,9 +333,7 @@ void MessageService::OpenChannelToExtension(
+     // Only the tab id is useful to platform apps for internal use. The
+     // unnecessary bits will be stripped out in
+     // MessagingBindings::DispatchOnConnect().
+-    source_tab.reset(ExtensionTabUtil::CreateTabObject(source_contents)
+-                         ->ToValue()
+-                         .release());
++    source_tab.reset(extensions::TabHelper::CreateTabValue(source_contents));
+ 
+     content::RenderFrameHost* rfh =
+         content::RenderFrameHost::FromID(source_process_id, source_routing_id);
+@@ -394,10 +393,10 @@ void MessageService::OpenChannelToExtension(
+     }
+ 
+     // This check may show a dialog.
+-    IncognitoConnectability::Get(context)
+-        ->Query(target_extension, source_contents, source_url,
+-                base::Bind(&MessageService::OnOpenChannelAllowed,
+-                           weak_factory_.GetWeakPtr(), base::Passed(&params)));
++    // IncognitoConnectability::Get(context)
++    //     ->Query(target_extension, source_contents, source_url,
++    //             base::Bind(&MessageService::OnOpenChannelAllowed,
++    //                        weak_factory_.GetWeakPtr(), base::Passed(&params)));
+     return;
+   }
+ 
+diff --git a/chrome/browser/plugins/plugin_info_message_filter.cc b/chrome/browser/plugins/plugin_info_message_filter.cc
+index ceb16a4..7a0690f 100644
+--- a/chrome/browser/plugins/plugin_info_message_filter.cc
++++ b/chrome/browser/plugins/plugin_info_message_filter.cc
+@@ -148,6 +148,7 @@ bool IsPluginLoadingAccessibleResourceInWebView(
+ 
+ PluginInfoMessageFilter::Context::Context(int render_process_id,
+                                           Profile* profile)
++#if 0
+     : render_process_id_(render_process_id),
+       resource_context_(profile->GetResourceContext()),
+ #if defined(ENABLE_EXTENSIONS)
+@@ -166,6 +167,9 @@ PluginInfoMessageFilter::Context::Context(int render_process_id,
+   always_authorize_plugins_.MoveToThread(
+       content::BrowserThread::GetTaskRunnerForThread(
+           content::BrowserThread::IO));
++#else
++{
++#endif
+ }
+ 
+ PluginInfoMessageFilter::Context::~Context() {
+@@ -181,8 +185,10 @@ PluginInfoMessageFilter::PluginInfoMessageFilter(int render_process_id,
+ 
+ bool PluginInfoMessageFilter::OnMessageReceived(const IPC::Message& message) {
+   IPC_BEGIN_MESSAGE_MAP(PluginInfoMessageFilter, message)
++#if 0
+     IPC_MESSAGE_HANDLER_DELAY_REPLY(ChromeViewHostMsg_GetPluginInfo,
+                                     OnGetPluginInfo)
++#endif
+ #if defined(ENABLE_PEPPER_CDMS)
+     IPC_MESSAGE_HANDLER(
+         ChromeViewHostMsg_IsInternalPluginAvailableForMimeType,
+@@ -209,7 +215,7 @@ struct PluginInfoMessageFilter::GetPluginInfo_Params {
+   GURL top_origin_url;
+   std::string mime_type;
+ };
+-
++#if 0
+ void PluginInfoMessageFilter::OnGetPluginInfo(
+     int render_frame_id,
+     const GURL& url,
+@@ -260,7 +266,7 @@ void PluginInfoMessageFilter::PluginsLoaded(
+                        reply_msg);
+   }
+ }
+-
++#endif
+ #if defined(ENABLE_PEPPER_CDMS)
+ 
+ void PluginInfoMessageFilter::OnIsInternalPluginAvailableForMimeType(
+@@ -278,11 +284,12 @@ void PluginInfoMessageFilter::OnIsInternalPluginAvailableForMimeType(
+         plugin.mime_types;
+     for (size_t j = 0; j < mime_types.size(); ++j) {
+       if (mime_types[j].mime_type == mime_type) {
++#if 0
+         if (!context_.IsPluginEnabled(plugin)) {
+           is_plugin_disabled = true;
+           break;
+         }
+-
++#endif
+         *is_available = true;
+         *additional_param_names = mime_types[j].additional_param_names;
+         *additional_param_values = mime_types[j].additional_param_values;
+@@ -298,7 +305,7 @@ void PluginInfoMessageFilter::OnIsInternalPluginAvailableForMimeType(
+ }
+ 
+ #endif  // defined(ENABLE_PEPPER_CDMS)
+-
++#if 0
+ void PluginInfoMessageFilter::Context::DecidePluginStatus(
+     const GetPluginInfo_Params& params,
+     const WebPluginInfo& plugin,
+@@ -502,3 +509,4 @@ bool PluginInfoMessageFilter::Context::IsPluginEnabled(
+     const content::WebPluginInfo& plugin) const {
+   return plugin_prefs_->IsPluginEnabled(plugin);
+ }
++#endif
+diff --git a/chrome/browser/renderer_host/chrome_extension_message_filter.cc b/chrome/browser/renderer_host/chrome_extension_message_filter.cc
+index a34a8ac..ac93870 100644
+--- a/chrome/browser/renderer_host/chrome_extension_message_filter.cc
++++ b/chrome/browser/renderer_host/chrome_extension_message_filter.cc
+@@ -14,10 +14,10 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/chrome_notification_types.h"
+-#include "chrome/browser/extensions/activity_log/activity_action_constants.h"
+-#include "chrome/browser/extensions/activity_log/activity_actions.h"
+-#include "chrome/browser/extensions/activity_log/activity_log.h"
+-#include "chrome/browser/extensions/api/activity_log_private/activity_log_private_api.h"
++// #include "chrome/browser/extensions/activity_log/activity_action_constants.h"
++// #include "chrome/browser/extensions/activity_log/activity_actions.h"
++// #include "chrome/browser/extensions/activity_log/activity_log.h"
++// #include "chrome/browser/extensions/api/activity_log_private/activity_log_private_api.h"
+ #include "chrome/browser/extensions/api/messaging/message_service.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profile_manager.h"
+@@ -25,6 +25,7 @@
+ #include "content/public/browser/notification_service.h"
+ #include "content/public/browser/render_process_host.h"
+ #include "extensions/browser/extension_system.h"
++#include "extensions/browser/info_map.h"
+ #include "extensions/common/api/messaging/message.h"
+ #include "extensions/common/extension_messages.h"
+ #include "extensions/common/file_util.h"
+@@ -40,17 +41,17 @@ const uint32_t kFilteredMessageClasses[] = {
+ };
+ 
+ // Logs an action to the extension activity log for the specified profile.
+-void AddActionToExtensionActivityLog(Profile* profile,
+-                                     extensions::ActivityLog* activity_log,
+-                                     scoped_refptr<extensions::Action> action) {
+-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  // If the action included a URL, check whether it is for an incognito
+-  // profile.  The check is performed here so that it can safely be done from
+-  // the UI thread.
+-  if (action->page_url().is_valid() || !action->page_title().empty())
+-    action->set_page_incognito(profile->IsOffTheRecord());
+-  activity_log->LogAction(action);
+-}
++// void AddActionToExtensionActivityLog(Profile* profile,
++//                                      extensions::ActivityLog* activity_log,
++//                                      scoped_refptr<extensions::Action> action) {
++//   DCHECK_CURRENTLY_ON(BrowserThread::UI);
++//   // If the action included a URL, check whether it is for an incognito
++//   // profile.  The check is performed here so that it can safely be done from
++//   // the UI thread.
++//   if (action->page_url().is_valid() || !action->page_title().empty())
++//     action->set_page_incognito(profile->IsOffTheRecord());
++//   activity_log->LogAction(action);
++// }
+ 
+ }  // namespace
+ 
+@@ -61,7 +62,7 @@ ChromeExtensionMessageFilter::ChromeExtensionMessageFilter(
+                            arraysize(kFilteredMessageClasses)),
+       render_process_id_(render_process_id),
+       profile_(profile),
+-      activity_log_(extensions::ActivityLog::GetInstance(profile)),
++      // activity_log_(extensions::ActivityLog::GetInstance(profile)),
+       extension_info_map_(
+           extensions::ExtensionSystem::Get(profile)->info_map()) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+@@ -88,12 +89,12 @@ bool ChromeExtensionMessageFilter::OnMessageReceived(
+     IPC_MESSAGE_HANDLER(ExtensionHostMsg_PostMessage, OnPostMessage)
+     IPC_MESSAGE_HANDLER_DELAY_REPLY(ExtensionHostMsg_GetMessageBundle,
+                                     OnGetExtMessageBundle)
+-    IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddAPIActionToActivityLog,
+-                        OnAddAPIActionToExtensionActivityLog);
+-    IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddDOMActionToActivityLog,
+-                        OnAddDOMActionToExtensionActivityLog);
+-    IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddEventToActivityLog,
+-                        OnAddEventToExtensionActivityLog);
++    // IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddAPIActionToActivityLog,
++    //                     OnAddAPIActionToExtensionActivityLog);
++    // IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddDOMActionToActivityLog,
++    //                     OnAddDOMActionToExtensionActivityLog);
++    // IPC_MESSAGE_HANDLER(ExtensionHostMsg_AddEventToActivityLog,
++    //                     OnAddEventToExtensionActivityLog);
+     IPC_MESSAGE_UNHANDLED(handled = false)
+   IPC_END_MESSAGE_MAP()
+ 
+@@ -106,9 +107,9 @@ void ChromeExtensionMessageFilter::OverrideThreadForMessage(
+     case ExtensionHostMsg_OpenMessagePort::ID:
+     case ExtensionHostMsg_CloseMessagePort::ID:
+     case ExtensionHostMsg_PostMessage::ID:
+-    case ExtensionHostMsg_AddAPIActionToActivityLog::ID:
+-    case ExtensionHostMsg_AddDOMActionToActivityLog::ID:
+-    case ExtensionHostMsg_AddEventToActivityLog::ID:
++    // case ExtensionHostMsg_AddAPIActionToActivityLog::ID:
++    // case ExtensionHostMsg_AddDOMActionToActivityLog::ID:
++    // case ExtensionHostMsg_AddEventToActivityLog::ID:
+       *thread = BrowserThread::UI;
+       break;
+     default:
+@@ -279,56 +280,56 @@ void ChromeExtensionMessageFilter::OnGetExtMessageBundleOnBlockingPool(
+   Send(reply_msg);
+ }
+ 
+-void ChromeExtensionMessageFilter::OnAddAPIActionToExtensionActivityLog(
+-    const std::string& extension_id,
+-    const ExtensionHostMsg_APIActionOrEvent_Params& params) {
+-  if (!ShouldLogExtensionAction(extension_id))
+-    return;
+-
+-  scoped_refptr<extensions::Action> action = new extensions::Action(
+-      extension_id, base::Time::Now(), extensions::Action::ACTION_API_CALL,
+-      params.api_call);
+-  action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
+-  if (!params.extra.empty()) {
+-    action->mutable_other()->SetString(
+-        activity_log_constants::kActionExtra, params.extra);
+-  }
+-  AddActionToExtensionActivityLog(profile_, activity_log_, action);
+-}
+-
+-void ChromeExtensionMessageFilter::OnAddDOMActionToExtensionActivityLog(
+-    const std::string& extension_id,
+-    const ExtensionHostMsg_DOMAction_Params& params) {
+-  if (!ShouldLogExtensionAction(extension_id))
+-    return;
+-
+-  scoped_refptr<extensions::Action> action = new extensions::Action(
+-      extension_id, base::Time::Now(), extensions::Action::ACTION_DOM_ACCESS,
+-      params.api_call);
+-  action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
+-  action->set_page_url(params.url);
+-  action->set_page_title(base::UTF16ToUTF8(params.url_title));
+-  action->mutable_other()->SetInteger(activity_log_constants::kActionDomVerb,
+-                                      params.call_type);
+-  AddActionToExtensionActivityLog(profile_, activity_log_, action);
+-}
+-
+-void ChromeExtensionMessageFilter::OnAddEventToExtensionActivityLog(
+-    const std::string& extension_id,
+-    const ExtensionHostMsg_APIActionOrEvent_Params& params) {
+-  if (!ShouldLogExtensionAction(extension_id))
+-    return;
+-
+-  scoped_refptr<extensions::Action> action = new extensions::Action(
+-      extension_id, base::Time::Now(), extensions::Action::ACTION_API_EVENT,
+-      params.api_call);
+-  action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
+-  if (!params.extra.empty()) {
+-    action->mutable_other()->SetString(activity_log_constants::kActionExtra,
+-                                       params.extra);
+-  }
+-  AddActionToExtensionActivityLog(profile_, activity_log_, action);
+-}
++// void ChromeExtensionMessageFilter::OnAddAPIActionToExtensionActivityLog(
++//     const std::string& extension_id,
++//     const ExtensionHostMsg_APIActionOrEvent_Params& params) {
++//   if (!ShouldLogExtensionAction(extension_id))
++//     return;
++
++//   scoped_refptr<extensions::Action> action = new extensions::Action(
++//       extension_id, base::Time::Now(), extensions::Action::ACTION_API_CALL,
++//       params.api_call);
++//   action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
++//   if (!params.extra.empty()) {
++//     action->mutable_other()->SetString(
++//         activity_log_constants::kActionExtra, params.extra);
++//   }
++//   AddActionToExtensionActivityLog(profile_, activity_log_, action);
++// }
++
++// void ChromeExtensionMessageFilter::OnAddDOMActionToExtensionActivityLog(
++//     const std::string& extension_id,
++//     const ExtensionHostMsg_DOMAction_Params& params) {
++//   if (!ShouldLogExtensionAction(extension_id))
++//     return;
++
++//   scoped_refptr<extensions::Action> action = new extensions::Action(
++//       extension_id, base::Time::Now(), extensions::Action::ACTION_DOM_ACCESS,
++//       params.api_call);
++//   action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
++//   action->set_page_url(params.url);
++//   action->set_page_title(base::UTF16ToUTF8(params.url_title));
++//   action->mutable_other()->SetInteger(activity_log_constants::kActionDomVerb,
++//                                       params.call_type);
++//   AddActionToExtensionActivityLog(profile_, activity_log_, action);
++// }
++
++// void ChromeExtensionMessageFilter::OnAddEventToExtensionActivityLog(
++//     const std::string& extension_id,
++//     const ExtensionHostMsg_APIActionOrEvent_Params& params) {
++//   if (!ShouldLogExtensionAction(extension_id))
++//     return;
++
++//   scoped_refptr<extensions::Action> action = new extensions::Action(
++//       extension_id, base::Time::Now(), extensions::Action::ACTION_API_EVENT,
++//       params.api_call);
++//   action->set_args(base::WrapUnique(params.arguments.DeepCopy()));
++//   if (!params.extra.empty()) {
++//     action->mutable_other()->SetString(activity_log_constants::kActionExtra,
++//                                        params.extra);
++//   }
++//   AddActionToExtensionActivityLog(profile_, activity_log_, action);
++// }
+ 
+ void ChromeExtensionMessageFilter::Observe(
+     int type,
+@@ -336,7 +337,7 @@ void ChromeExtensionMessageFilter::Observe(
+     const content::NotificationDetails& details) {
+   DCHECK_EQ(chrome::NOTIFICATION_PROFILE_DESTROYED, type);
+   profile_ = NULL;
+-  activity_log_ = nullptr;
++  // activity_log_ = nullptr;
+ }
+ 
+ bool ChromeExtensionMessageFilter::ShouldLogExtensionAction(
+@@ -345,7 +346,8 @@ bool ChromeExtensionMessageFilter::ShouldLogExtensionAction(
+   // conditions (e.g. logging gets disabled but the renderer sends the message
+   // before it gets updated), we still need this check here.
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  return profile_ &&
+-         g_browser_process->profile_manager()->IsValidProfile(profile_) &&
+-         activity_log_ && activity_log_->ShouldLog(extension_id);
++  // return profile_ &&
++  //        g_browser_process->profile_manager()->IsValidProfile(profile_) &&
++  //        activity_log_ && activity_log_->ShouldLog(extension_id);
++  return false;
+ }
+diff --git a/chrome/browser/renderer_host/chrome_extension_message_filter.h b/chrome/browser/renderer_host/chrome_extension_message_filter.h
+index 12d09e4..df74bdf 100644
+--- a/chrome/browser/renderer_host/chrome_extension_message_filter.h
++++ b/chrome/browser/renderer_host/chrome_extension_message_filter.h
+@@ -91,18 +91,18 @@ class ChromeExtensionMessageFilter : public content::BrowserMessageFilter,
+   void OnGetExtMessageBundleOnBlockingPool(
+       const std::string& extension_id,
+       IPC::Message* reply_msg);
+-  void OnAddAPIActionToExtensionActivityLog(
+-      const std::string& extension_id,
+-      const ExtensionHostMsg_APIActionOrEvent_Params& params);
+-  void OnAddBlockedCallToExtensionActivityLog(
+-      const std::string& extension_id,
+-      const std::string& function_name);
+-  void OnAddDOMActionToExtensionActivityLog(
+-      const std::string& extension_id,
+-      const ExtensionHostMsg_DOMAction_Params& params);
+-  void OnAddEventToExtensionActivityLog(
+-      const std::string& extension_id,
+-      const ExtensionHostMsg_APIActionOrEvent_Params& params);
++  // void OnAddAPIActionToExtensionActivityLog(
++  //     const std::string& extension_id,
++  //     const ExtensionHostMsg_APIActionOrEvent_Params& params);
++  // void OnAddBlockedCallToExtensionActivityLog(
++  //     const std::string& extension_id,
++  //     const std::string& function_name);
++  // void OnAddDOMActionToExtensionActivityLog(
++  //     const std::string& extension_id,
++  //     const ExtensionHostMsg_DOMAction_Params& params);
++  // void OnAddEventToExtensionActivityLog(
++  //     const std::string& extension_id,
++  //     const ExtensionHostMsg_APIActionOrEvent_Params& params);
+ 
+   // content::NotificationObserver implementation.
+   void Observe(int type,
+diff --git a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc
+index 2b42f45..c8d6c51 100644
+--- a/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc
++++ b/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc
+@@ -60,6 +60,7 @@ ChromeBrowserPepperHostFactory::CreateResourceHost(
+             host_->GetPpapiHost(), instance, resource, pv_filter));
+       }
+ #endif
++#if 0
+       case PpapiHostMsg_OutputProtection_Create::ID: {
+         scoped_refptr<ResourceMessageFilter> output_protection_filter(
+             new chrome::PepperOutputProtectionMessageFilter(host_, instance));
+@@ -67,6 +68,7 @@ ChromeBrowserPepperHostFactory::CreateResourceHost(
+             new MessageFilterHost(host_->GetPpapiHost(), instance, resource,
+                                   output_protection_filter));
+       }
++#endif
+     }
+   }
+ 
 diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
 index 0a96fa2..4fdad32 100644
 --- a/chrome/common/chrome_constants.cc
 +++ b/chrome/common/chrome_constants.cc
 @@ -9,12 +9,13 @@
-
+ 
  #define FPL FILE_PATH_LITERAL
-
+ 
 +#define EXECUTABLE_NAME PRODUCT_SHORTNAME_STRING
  #if defined(OS_MACOSX)
 -#define CHROMIUM_PRODUCT_STRING "Chromium"
@@ -56,7 +483,7 @@ index 0a96fa2..4fdad32 100644
  #error Unknown branding
  #endif
 @@ -43,13 +44,13 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
-
+ 
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
 -    FPL("chrome.exe");
@@ -85,7 +512,7 @@ index 0a96fa2..4fdad32 100644
  // /proc/self/exe.  See bug 22703.
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] =
 @@ -80,13 +81,13 @@ const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
-
+ 
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
 -    FPL("chrome.exe");
@@ -128,11 +555,11 @@ index 0a96fa2..4fdad32 100644
 +    FPL(EXECUTABLE_NAME);
 +const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL(EXECUTABLE_NAME);
  #endif  // OS_*
-
+ 
  #if defined(OS_MACOSX)
 @@ -119,8 +120,8 @@ const base::FilePath::CharType kFrameworkName[] =
  #endif  // OS_MACOSX
-
+ 
  #if defined(OS_WIN)
 -const base::FilePath::CharType kBrowserResourcesDll[] = FPL("chrome.dll");
 -const base::FilePath::CharType kChromeElfDllName[] = FPL("chrome_elf.dll");
@@ -153,6 +580,39 @@ index efd272e..051851c 100644
      @"Google Chrome": @"Google Chrome",
      @"Google Chrome Canary": @"Google Chrome",
    };
+diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
+index c1e2d1a..dad5de2 100644
+--- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
++++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
+@@ -81,9 +81,11 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+         }
+         break;
+       }
++#if 0
+       case PpapiHostMsg_FlashDRM_Create::ID:
+         return base::WrapUnique(
+             new PepperFlashDRMRendererHost(host_, instance, resource));
++#endif
+     }
+   }
+ 
+@@ -96,7 +98,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+       }
+     }
+   }
+-
++#if 0
+   // Permissions for the following interfaces will be checked at the
+   // time of the corresponding instance's method calls.  Currently these
+   // interfaces are available only for whitelisted apps which may not have
+@@ -106,6 +108,6 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+       return base::WrapUnique(new PepperUMAHost(host_, instance, resource));
+     }
+   }
+-
++#endif
+   return nullptr;
+ }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
 index 36693be..a7cee74 100644
 --- a/chrome/test/BUILD.gn
@@ -160,7 +620,7 @@ index 36693be..a7cee74 100644
 @@ -642,7 +642,7 @@ if (!is_android) {
        }
      }  # enable_notifications
-
+ 
 -    if (!use_aura || is_chromeos) {
 +    if (toolkit_views && (!use_aura || is_chromeos)) {
        sources -=
@@ -177,8 +637,213 @@ index a29cb8d..5d5b887 100644
 -      branding_path = "//chrome/app/theme/chromium/BRANDING"
 +      branding_path = "//chrome/app/theme/brave/BRANDING"
      }
-
+ 
      inputs = [
+diff --git a/components/guest_view/browser/guest_view_base.h b/components/guest_view/browser/guest_view_base.h
+index 320a5e4..06162d7 100644
+--- a/components/guest_view/browser/guest_view_base.h
++++ b/components/guest_view/browser/guest_view_base.h
+@@ -334,7 +334,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
+ 
+   // BrowserPluginGuestDelegate implementation.
+   content::WebContents* CreateNewGuestWindow(
+-      const content::WebContents::CreateParams& create_params) final;
++      const content::WebContents::CreateParams& create_params) override;
+   void DidAttach(int guest_proxy_routing_id) final;
+   void DidDetach() final;
+   content::WebContents* GetOwnerWebContents() const final;
+diff --git a/content/app/content_main_runner.cc b/content/app/content_main_runner.cc
+index 01bb5f0..9584584 100644
+--- a/content/app/content_main_runner.cc
++++ b/content/app/content_main_runner.cc
+@@ -231,7 +231,7 @@ void CommonSubprocessInit(const std::string& process_type) {
+   setlocale(LC_NUMERIC, "C");
+ #endif
+ 
+-#if !defined(OFFICIAL_BUILD)
++#if 0
+   // Print stack traces to stderr when crashes occur. This opens up security
+   // holes so it should never be enabled for official builds.
+   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 6c7d156..0325b27 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -104,6 +104,7 @@ struct AXTextMarkerData {
+ // VoiceOver uses -1 to mean "no limit" for AXResultsLimit.
+ const int kAXResultsLimitNoLimit = -1;
+ 
++#ifndef MAS_BUILD
+ extern "C" {
+ 
+ // See http://openradar.appspot.com/9896491. This SPI has been tested on 10.5,
+@@ -309,6 +310,7 @@ NSAttributedString* GetAttributedTextForTextMarkerRange(
+   AddMisspelledTextAttributes(text_only_objects, attributed_text);
+   return [attributed_text attributedSubstringFromRange:range];
+ }
++#endif
+ 
+ // Returns an autoreleased copy of the AXNodeData's attribute.
+ NSString* NSStringForStringAttribute(
+@@ -544,7 +546,9 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+       {NSAccessibilityDisclosedRowsAttribute, @"disclosedRows"},
+       {NSAccessibilityDropEffectsAttribute, @"dropEffects"},
+       {NSAccessibilityEnabledAttribute, @"enabled"},
++#ifndef MAS_BUILD
+       {NSAccessibilityEndTextMarkerAttribute, @"endTextMarker"},
++#endif
+       {NSAccessibilityExpandedAttribute, @"expanded"},
+       {NSAccessibilityFocusedAttribute, @"focused"},
+       {NSAccessibilityGrabbedAttribute, @"grabbed"},
+@@ -572,13 +576,17 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+       {NSAccessibilityRowsAttribute, @"rows"},
+       // TODO(aboxhall): expose
+       // NSAccessibilityServesAsTitleForUIElementsAttribute
++#ifndef MAS_BUILD
+       {NSAccessibilityStartTextMarkerAttribute, @"startTextMarker"},
++#endif
+       {NSAccessibilitySelectedAttribute, @"selected"},
+       {NSAccessibilitySelectedChildrenAttribute, @"selectedChildren"},
+       {NSAccessibilitySelectedTextAttribute, @"selectedText"},
+       {NSAccessibilitySelectedTextRangeAttribute, @"selectedTextRange"},
++#ifndef MAS_BUILD
+       {NSAccessibilitySelectedTextMarkerRangeAttribute,
+        @"selectedTextMarkerRange"},
++#endif
+       {NSAccessibilitySizeAttribute, @"size"},
+       {NSAccessibilitySortDirectionAttribute, @"sortDirection"},
+       {NSAccessibilitySubroleAttribute, @"subrole"},
+@@ -617,8 +625,10 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+ }
+ 
+ - (void)detach {
++#ifndef MAS_BUILD
+   if (browserAccessibility_)
+     NSAccessibilityUnregisterUniqueIdForUIElement(self);
++#endif
+   browserAccessibility_ = nullptr;
+ }
+ 
+@@ -909,6 +919,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+       !GetState(browserAccessibility_, ui::AX_STATE_DISABLED)];
+ }
+ 
++#ifndef MAS_BUILD
+ // Returns a text marker that points to the last character in the document that
+ // can be selected with VoiceOver.
+ - (id)endTextMarker {
+@@ -937,6 +948,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+                           last_text_object->GetText().length(),
+                           ui::AX_TEXT_AFFINITY_DOWNSTREAM);
+ }
++#endif
+ 
+ - (NSNumber*)expanded {
+   if (![self instanceActive])
+@@ -1590,6 +1602,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+   return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
+ }
+ 
++#ifndef MAS_BUILD
+ - (id)selectedTextMarkerRange {
+   if (![self instanceActive])
+     return nil;
+@@ -1620,6 +1633,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+   return CreateTextMarkerRange(*anchorObject, anchorOffset, anchorAffinity,
+                                *focusObject, focusOffset, focusAffinity);
+ }
++#endif
+ 
+ - (NSValue*)size {
+   if (![self instanceActive])
+@@ -1652,6 +1666,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+   return nil;
+ }
+ 
++#ifndef MAS_BUILD
+ // Returns a text marker that points to the first character in the document that
+ // can be selected with VoiceOver.
+ - (id)startTextMarker {
+@@ -1678,6 +1693,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+ 
+   return CreateTextMarker(*first_text_object, 0, ui::AX_TEXT_AFFINITY_UPSTREAM);
+ }
++#endif
+ 
+ // Returns a subrole based upon the role.
+ - (NSString*) subrole {
+@@ -1950,10 +1966,12 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+   NSString* value = base::SysUTF16ToNSString(browserAccessibility_->GetValue());
+   NSMutableAttributedString* attributedValue =
+       [[[NSMutableAttributedString alloc] initWithString:value] autorelease];
++#ifndef MAS_BUILD
+   std::vector<const BrowserAccessibility*> textOnlyObjects =
+       BrowserAccessibilityManager::FindTextOnlyObjectsInRange(
+           *browserAccessibility_, *browserAccessibility_);
+   AddMisspelledTextAttributes(textOnlyObjects, attributedValue);
++#endif
+   return [attributedValue attributedSubstringFromRange:range];
+ }
+ 
+@@ -2074,6 +2092,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+     return nil;
+   }
+ 
++#ifndef MAS_BUILD
+   if ([attribute isEqualToString:@"AXUIElementForTextMarker"]) {
+     BrowserAccessibility* object;
+     int offset;
+@@ -2256,6 +2275,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+     NSString* text = GetTextForTextMarkerRange(parameter);
+     return [NSNumber numberWithInt:[text length]];
+   }
++#endif
+ 
+   if ([attribute isEqualToString:
+       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
+@@ -2293,6 +2313,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+     return nil;
+   }
+ 
++#ifndef MAS_BUILD
+   if ([attribute isEqualToString:
+            NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
+     BrowserAccessibility* object;
+@@ -2310,6 +2331,7 @@ NSString* const NSAccessibilityRequiredAttribute = @"AXRequired";
+         *object, startOffset, ui::AX_TEXT_AFFINITY_UPSTREAM,
+         *object, endOffset, ui::AX_TEXT_AFFINITY_DOWNSTREAM);
+   }
++#endif
+ 
+   if ([attribute isEqualToString:
+            NSAccessibilityBoundsForTextMarkerRangeParameterizedAttribute]) {
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 77ce72f..c8c80e5 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -83,8 +83,10 @@ NSString* const NSAccessibilityTextSelectionGranularity =
+     @"AXTextSelectionGranularity";
+ NSString* const NSAccessibilityTextSelectionChangedFocus =
+     @"AXTextSelectionChangedFocus";
++#ifndef MAS_BUILD
+ NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
+     @"AXSelectedTextMarkerRange";
++#endif
+ NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
+ NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
+ NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
+@@ -432,9 +434,10 @@ NSDictionary* BrowserAccessibilityManagerMac::
+     focus_object = focus_object->GetClosestPlatformObject();
+     auto native_focus_object = ToBrowserAccessibilityCocoa(focus_object);
+     if (native_focus_object && [native_focus_object instanceActive]) {
++#ifndef MAS_BUILD
+       [user_info setObject:native_focus_object
+                     forKey:NSAccessibilityTextChangeElement];
+-
++#endif
+       id selected_text = [native_focus_object selectedTextMarkerRange];
+       if (selected_text) {
+         [user_info setObject:selected_text
 diff --git a/content/browser/renderer_host/input/synthetic_gesture_target_mac.mm b/content/browser/renderer_host/input/synthetic_gesture_target_mac.mm
 index 92d3617..6004636 100644
 --- a/content/browser/renderer_host/input/synthetic_gesture_target_mac.mm
@@ -190,16 +855,16 @@ index 92d3617..6004636 100644
 -@property(readonly) NSEventModifierFlags modifierFlags;
 +@property(readonly) NSUInteger modifierFlags;
  @property(readonly) NSTimeInterval timestamp;
-
+ 
  @end
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
 index 825941f..ccd932f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -137,6 +137,11 @@ RenderWidgetHostViewMac* GetRenderWidgetHostViewToUse(
-
+ 
  }  // namespace
-
+ 
 +@interface NSWindow (AtomCustomMethods)
 +- (BOOL)acceptsFirstMouse;
 +- (BOOL)disableAutoHideCursor;
@@ -217,21 +882,21 @@ index 825941f..ccd932f 100644
 +#endif
    [cocoa_view_ setLayer:background_layer_];
    [cocoa_view_ setWantsLayer:YES];
-
+ 
 @@ -1737,6 +1744,9 @@ void RenderWidgetHostViewMac::OnDisplayMetricsChanged(
  }
-
+ 
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
 +  if ([self.window respondsToSelector:@selector(acceptsFirstMouse)] &&
 +      [self.window acceptsFirstMouse])
 +    return YES;
    return [self acceptsMouseEventsWhenInactive];
  }
-
+ 
 @@ -1878,6 +1888,7 @@ void RenderWidgetHostViewMac::OnDisplayMetricsChanged(
    if (EventIsReservedBySystem(theEvent))
      return NO;
-
+ 
 +#if 0
    // If we return |NO| from this function, cocoa will send the key event to
    // the menu and only if the menu does not process the event to |keyDown:|. We
@@ -241,19 +906,19 @@ index 825941f..ccd932f 100644
      return NO;
    }
 +#endif
-
+ 
    // Command key combinations are sent via performKeyEquivalent rather than
    // keyDown:. We just forward this on and if WebCore doesn't want to handle
 @@ -1938,8 +1950,9 @@ void RenderWidgetHostViewMac::OnDisplayMetricsChanged(
    if (EventIsReservedBySystem(theEvent))
      return;
-
+ 
 -  DCHECK([theEvent type] != NSKeyDown ||
 -         !equiv == !([theEvent modifierFlags] & NSCommandKeyMask));
 +  // TODO(bridiver) undo this and the electron patch
 +  // DCHECK([theEvent type] != NSKeyDown ||
 +  //        !equiv == !([theEvent modifierFlags] & NSCommandKeyMask));
-
+ 
    if ([theEvent type] == NSFlagsChanged) {
      // Ignore NSFlagsChanged events from the NumLock and Fn keys as
 @@ -2639,6 +2652,10 @@ void RenderWidgetHostViewMac::OnDisplayMetricsChanged(
@@ -276,7 +941,7 @@ index 825941f..ccd932f 100644
  extern NSString *NSTextInputReplacementRangeAttributeName;
  }
 +#endif
-
+ 
  - (NSArray *)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
 @@ -2806,7 +2825,9 @@ extern NSString *NSTextInputReplacementRangeAttributeName;
@@ -289,6 +954,19 @@ index 825941f..ccd932f 100644
          nil]);
    }
    return validAttributesForMarkedText_.get();
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index b0451e4..20a8374 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -1994,7 +1994,7 @@ void WebContentsImpl::CreateNewWindow(
+   DCHECK(!params.opener_suppressed || route_id == MSG_ROUTING_NONE);
+ 
+   scoped_refptr<SiteInstance> site_instance =
+-      params.opener_suppressed && !is_guest
++      params.opener_suppressed // && !is_guest
+           ? SiteInstance::CreateForURL(GetBrowserContext(), params.target_url)
+           : source_site_instance;
+ 
 diff --git a/content/child/child_process.cc b/content/child/child_process.cc
 index 2763ee03..ffc1792 100644
 --- a/content/child/child_process.cc
@@ -302,6 +980,97 @@ index 2763ee03..ffc1792 100644
  #endif  // CHROMIUM_BUILD
    title += " ";
    title += label;  // makes attaching to process easier
+diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
+index 71368bd..047054f 100644
+--- a/content/common/dom_storage/dom_storage_map.cc
++++ b/content/common/dom_storage/dom_storage_map.cc
+@@ -64,10 +64,12 @@ bool DOMStorageMap::SetItem(
+   size_t new_item_size = size_of_item(key, value);
+   size_t new_bytes_used = bytes_used_ - old_item_size + new_item_size;
+ 
++#if 0
+   // Only check quota if the size is increasing, this allows
+   // shrinking changes to pre-existing files that are over budget.
+   if (new_item_size > old_item_size && new_bytes_used > quota_)
+     return false;
++#endif
+ 
+   values_[key] = base::NullableString16(value, false);
+   ResetKeyIterator();
+diff --git a/content/public/browser/resource_request_details.cc b/content/public/browser/resource_request_details.cc
+index bc7de5a..8aabacd 100644
+--- a/content/public/browser/resource_request_details.cc
++++ b/content/public/browser/resource_request_details.cc
+@@ -22,6 +22,10 @@ ResourceRequestDetails::ResourceRequestDetails(const net::URLRequest* request,
+       ssl_cert_id(cert_id),
+       ssl_cert_status(request->ssl_info().cert_status),
+       socket_address(request->GetSocketAddress()) {
++  if (request->response_info().headers.get())
++    headers = new net::HttpResponseHeaders(
++        request->response_info().headers->raw_headers());
++
+   const ResourceRequestInfo* info = ResourceRequestInfo::ForRequest(request);
+   resource_type = info->GetResourceType();
+   http_response_code =
+diff --git a/content/public/browser/resource_request_details.h b/content/public/browser/resource_request_details.h
+index 5b859ae..35669e12 100644
+--- a/content/public/browser/resource_request_details.h
++++ b/content/public/browser/resource_request_details.h
+@@ -10,6 +10,7 @@
+ #include "content/public/common/resource_type.h"
+ #include "net/base/host_port_pair.h"
+ #include "net/cert/cert_status_flags.h"
++#include "net/http/http_response_headers.h"
+ #include "net/url_request/url_request_status.h"
+ #include "url/gurl.h"
+ 
+@@ -41,6 +42,7 @@ struct ResourceRequestDetails {
+   // HTTP response code. See HttpResponseHeaders::response_code().
+   // -1 if there are no response headers yet.
+   int http_response_code;
++  scoped_refptr<net::HttpResponseHeaders> headers;
+ };
+ 
+ // Details about a redirection of a resource request.
+diff --git a/content/renderer/browser_plugin/browser_plugin.cc b/content/renderer/browser_plugin/browser_plugin.cc
+index ed9dafb..7dddb8a 100644
+--- a/content/renderer/browser_plugin/browser_plugin.cc
++++ b/content/renderer/browser_plugin/browser_plugin.cc
+@@ -448,8 +448,8 @@ blink::WebInputEventResult BrowserPlugin::handleInputEvent(
+ 
+   if (blink::WebInputEvent::isGestureEventType(event.type)) {
+     auto gesture_event = static_cast<const blink::WebGestureEvent&>(event);
+-    DCHECK(blink::WebInputEvent::GestureTapDown == event.type ||
+-           gesture_event.resendingPluginId == browser_plugin_instance_id_);
++    // DCHECK(blink::WebInputEvent::GestureTapDown == event.type ||
++    //        gesture_event.resendingPluginId == browser_plugin_instance_id_);
+ 
+     // We shouldn't be forwarding GestureEvents to the Guest anymore. Indicate
+     // we handled this only if it's a non-resent event.
+diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
+index 5b02de2..da5fdba 100644
+--- a/content/renderer/render_thread_impl.cc
++++ b/content/renderer/render_thread_impl.cc
+@@ -746,12 +746,13 @@ void RenderThreadImpl::Init(
+       switches::kEnableGpuMemoryBufferCompositorResources);
+ 
+ #if defined(OS_MACOSX)
+-  base::ScopedCFTypeRef<CFStringRef> key(
+-      base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
+-  Boolean key_exists = false;
+-  Boolean value = CFPreferencesGetAppBooleanValue(
+-      key, kCFPreferencesCurrentApplication, &key_exists);
+-  is_elastic_overscroll_enabled_ = !key_exists || value;
++  // base::ScopedCFTypeRef<CFStringRef> key(
++  //     base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
++  // Boolean key_exists = false;
++  // Boolean value = CFPreferencesGetAppBooleanValue(
++  //     key, kCFPreferencesCurrentApplication, &key_exists);
++  // is_elastic_overscroll_enabled_ = !key_exists || value;
++  is_elastic_overscroll_enabled_ = true;
+ #else
+   is_elastic_overscroll_enabled_ = false;
+ #endif
 diff --git a/extensions/browser/extension_function_dispatcher.cc b/extensions/browser/extension_function_dispatcher.cc
 index b944303..9284675 100644
 --- a/extensions/browser/extension_function_dispatcher.cc
@@ -322,7 +1091,7 @@ index b944303..9284675 100644
 +  // }
    return true;
  }
-
+ 
 diff --git a/extensions/common/features/simple_feature.cc b/extensions/common/features/simple_feature.cc
 index 048fcfb..9cd13c5 100644
 --- a/extensions/common/features/simple_feature.cc
@@ -346,7 +1115,7 @@ index 8cfc8cb..606282f 100644
    var shadowRoot = this.element.createShadowRoot();
 +  shadowRoot.innerHTML = '<style>:host { display: flex; }</style>'
    shadowRoot.appendChild(privates(this).internalElement);
-
+ 
    GuestViewInternalNatives.RegisterView(this.viewInstanceId, this, viewType);
 @@ -203,8 +204,7 @@ function registerInternalElement(viewType) {
    proto.createdCallback = function() {
@@ -356,7 +1125,7 @@ index 8cfc8cb..606282f 100644
 -    this.style.height = '100%';
 +    this.style.flex = '1 1 auto'
    };
-
+ 
    proto.attachedCallback = function() {
 diff --git a/net/http/http_util.cc b/net/http/http_util.cc
 index cb7913b..7bc5de6 100644
@@ -372,7 +1141,7 @@ index cb7913b..7bc5de6 100644
 +  //                           url.SchemeIsWSOrWSS()));
    return SimplifyUrlForRequest(url).spec();
  }
-
+ 
 diff --git a/net/url_request/url_request_job.h b/net/url_request/url_request_job.h
 index b93ff45..79748cda 100644
 --- a/net/url_request/url_request_job.h
@@ -380,11 +1149,149 @@ index b93ff45..79748cda 100644
 @@ -284,6 +284,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
    void OnCallToDelegate();
    void OnCallToDelegateComplete();
-
+ 
 + public:
    // Called to read raw (pre-filtered) data from this Job. Reads at most
    // |buf_size| bytes into |buf|.
    // Possible return values:
+diff --git a/third_party/WebKit/Source/core/dom/DOMArrayBuffer.h b/third_party/WebKit/Source/core/dom/DOMArrayBuffer.h
+index e436a07..872df7f 100644
+--- a/third_party/WebKit/Source/core/dom/DOMArrayBuffer.h
++++ b/third_party/WebKit/Source/core/dom/DOMArrayBuffer.h
+@@ -30,6 +30,10 @@ public:
+     {
+         return create(WTF::ArrayBuffer::create(contents));
+     }
++    static DOMArrayBuffer* createExternal(void* source, unsigned byteLength)
++    {
++        return new DOMArrayBuffer(source, byteLength);
++    }
+ 
+     // Only for use by XMLHttpRequest::responseArrayBuffer and
+     // Internals::serializeObject.
+@@ -54,6 +58,10 @@ private:
+         : DOMArrayBufferBase(buffer)
+     {
+     }
++    DOMArrayBuffer(void* source, unsigned byteLength)
++        : DOMArrayBufferBase(source, byteLength)
++    {
++    }
+ };
+ 
+ } // namespace blink
+diff --git a/third_party/WebKit/Source/core/dom/DOMArrayBufferBase.h b/third_party/WebKit/Source/core/dom/DOMArrayBufferBase.h
+index b969516..d465623 100644
+--- a/third_party/WebKit/Source/core/dom/DOMArrayBufferBase.h
++++ b/third_party/WebKit/Source/core/dom/DOMArrayBufferBase.h
+@@ -19,9 +19,24 @@ public:
+     const WTF::ArrayBuffer* buffer() const { return m_buffer.get(); }
+     WTF::ArrayBuffer* buffer() { return m_buffer.get(); }
+ 
+-    const void* data() const { return buffer()->data(); }
+-    void* data() { return buffer()->data(); }
+-    unsigned byteLength() const { return buffer()->byteLength(); }
++    const void* data() const {
++      if (m_isExternal)
++          return m_source;
++      else
++          return buffer()->data();
++    }
++    void* data() {
++        if (m_isExternal)
++            return m_source;
++        else
++            return buffer()->data();
++    }
++    unsigned byteLength() const {
++        if (m_isExternal)
++            return m_byteLength;
++        else
++            return buffer()->byteLength();
++    }
+     bool transfer(WTF::ArrayBufferContents& result) { return buffer()->transfer(result); }
+     bool shareContentsWith(WTF::ArrayBufferContents& result) { return buffer()->shareContentsWith(result); }
+     bool isNeutered() const { return buffer()->isNeutered(); }
+@@ -37,12 +52,25 @@ public:
+ 
+ protected:
+     explicit DOMArrayBufferBase(PassRefPtr<WTF::ArrayBuffer> buffer)
+-        : m_buffer(buffer)
++        : m_buffer(buffer),
++          m_isExternal(false),
++          m_source(nullptr),
++          m_byteLength(0)
+     {
+         DCHECK(m_buffer);
+     }
++    DOMArrayBufferBase(void* source, unsigned byteLength)
++        : m_buffer(WTF::ArrayBuffer::create(source, byteLength)),
++          m_isExternal(true),
++          m_source(source),
++          m_byteLength(byteLength)
++    {
++    }
+ 
+     RefPtr<WTF::ArrayBuffer> m_buffer;
++    bool m_isExternal;
++    void* m_source;
++    unsigned m_byteLength;
+ };
+ 
+ } // namespace blink
+diff --git a/third_party/WebKit/Source/core/editing/EditingBehavior.h b/third_party/WebKit/Source/core/editing/EditingBehavior.h
+index 2c4cce6..d8df6d9 100644
+--- a/third_party/WebKit/Source/core/editing/EditingBehavior.h
++++ b/third_party/WebKit/Source/core/editing/EditingBehavior.h
+@@ -74,7 +74,7 @@ public:
+     // On Mac and Windows, pressing backspace (when it isn't handled otherwise) should navigate back.
+     bool shouldNavigateBackOnBackspace() const
+     {
+-        return m_type != EditingUnixBehavior && m_type != EditingAndroidBehavior;
++        return false;
+     }
+ 
+     // On Mac, selecting backwards by word/line from the middle of a word/line, and then going
+diff --git a/third_party/WebKit/Source/core/fileapi/File.idl b/third_party/WebKit/Source/core/fileapi/File.idl
+index 8277597..8aca099 100644
+--- a/third_party/WebKit/Source/core/fileapi/File.idl
++++ b/third_party/WebKit/Source/core/fileapi/File.idl
+@@ -34,6 +34,7 @@
+     Exposed=(Window,Worker),
+ ] interface File : Blob {
+     readonly attribute DOMString name;
++    readonly attribute DOMString path;
+     readonly attribute long long lastModified;
+ 
+     // Non-standard APIs
+diff --git a/third_party/WebKit/Source/web/WebArrayBuffer.cpp b/third_party/WebKit/Source/web/WebArrayBuffer.cpp
+index 471ce6a..29b0bbd 100644
+--- a/third_party/WebKit/Source/web/WebArrayBuffer.cpp
++++ b/third_party/WebKit/Source/web/WebArrayBuffer.cpp
+@@ -39,6 +39,11 @@ WebArrayBuffer WebArrayBuffer::create(unsigned numElements, unsigned elementByte
+     return WebArrayBuffer(DOMArrayBuffer::create(numElements, elementByteSize));
+ }
+ 
++WebArrayBuffer WebArrayBuffer::createExternal(void* source, unsigned byteLength)
++{
++    return WebArrayBuffer(DOMArrayBuffer::createExternal(source, byteLength));
++}
++
+ void WebArrayBuffer::reset()
+ {
+     m_private.reset();
+diff --git a/third_party/WebKit/public/web/WebArrayBuffer.h b/third_party/WebKit/public/web/WebArrayBuffer.h
+index 668bbfd..85a6c28 100644
+--- a/third_party/WebKit/public/web/WebArrayBuffer.h
++++ b/third_party/WebKit/public/web/WebArrayBuffer.h
+@@ -51,6 +51,7 @@ public:
+     }
+ 
+     BLINK_EXPORT static WebArrayBuffer create(unsigned numElements, unsigned elementByteSize);
++    BLINK_EXPORT static WebArrayBuffer createExternal(void* source, unsigned byteLength);
+ 
+     BLINK_EXPORT void reset();
+     BLINK_EXPORT void assign(const WebArrayBuffer&);
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
 index 5accf0e..1b93b7b 100644
 --- a/ui/base/BUILD.gn
