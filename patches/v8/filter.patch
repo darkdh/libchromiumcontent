@@ -1,5 +1,5 @@
 diff --git a/BUILD.gn b/BUILD.gn
-index dcefe37..3600734 100644
+index dcefe37..679ce6b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -45,7 +45,7 @@ declare_args() {
@@ -11,7 +11,19 @@ index dcefe37..3600734 100644
 
    # Enable slow dchecks.
    v8_enable_slow_dchecks = false
-@@ -133,12 +133,13 @@ config("libsampler_config") {
+@@ -106,8 +106,10 @@ config("internal_config") {
+
+   include_dirs = [ "." ]
+
++  defines = [ "SUPPRESS_V8_SNAPSHOT" ]
++
+   if (is_component_build) {
+-    defines = [
++    defines += [
+       "V8_SHARED",
+       "BUILDING_V8_SHARED",
+     ]
+@@ -133,12 +135,13 @@ config("libsampler_config") {
  # This config should only be applied to code using V8 and not any V8 code
  # itself.
  config("external_config") {
@@ -27,7 +39,7 @@ index dcefe37..3600734 100644
    include_dirs = [ "include" ]
    libs = []
    if (is_android && current_toolchain != host_toolchain) {
-@@ -726,6 +727,7 @@ source_set("v8_maybe_snapshot") {
+@@ -726,6 +729,7 @@ source_set("v8_maybe_snapshot") {
  }
 
  v8_source_set("v8_nosnapshot") {
@@ -35,7 +47,7 @@ index dcefe37..3600734 100644
    visibility = [ ":*" ]  # Only targets in this file can depend on this.
 
    deps = [
-@@ -748,6 +750,7 @@ v8_source_set("v8_nosnapshot") {
+@@ -748,6 +752,7 @@ v8_source_set("v8_nosnapshot") {
  }
 
  v8_source_set("v8_snapshot") {
@@ -43,7 +55,7 @@ index dcefe37..3600734 100644
    # Only targets in this file and the top-level visibility target can
    # depend on this.
    visibility = [
-@@ -781,6 +784,7 @@ v8_source_set("v8_snapshot") {
+@@ -781,6 +786,7 @@ v8_source_set("v8_snapshot") {
 
  if (v8_use_external_startup_data) {
    v8_source_set("v8_external_snapshot") {
@@ -51,7 +63,7 @@ index dcefe37..3600734 100644
      visibility = [ ":*" ]  # Only targets in this file can depend on this.
 
      deps = [
-@@ -805,6 +809,8 @@ if (v8_use_external_startup_data) {
+@@ -805,6 +811,8 @@ if (v8_use_external_startup_data) {
  }
 
  v8_source_set("v8_base") {
@@ -60,7 +72,7 @@ index dcefe37..3600734 100644
    visibility = [ ":*" ]  # Only targets in this file can depend on this.
 
    sources = [
-@@ -1986,8 +1992,8 @@ v8_source_set("v8_base") {
+@@ -1986,8 +1994,8 @@ v8_source_set("v8_base") {
      ":v8_libsampler",
    ]
 
@@ -71,7 +83,7 @@ index dcefe37..3600734 100644
 
    if (is_win) {
      # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
-@@ -2001,8 +2007,8 @@ v8_source_set("v8_base") {
+@@ -2001,8 +2009,8 @@ v8_source_set("v8_base") {
      }
    } else {
      sources -= [
@@ -82,7 +94,7 @@ index dcefe37..3600734 100644
      ]
    }
 
-@@ -2013,6 +2019,8 @@ v8_source_set("v8_base") {
+@@ -2013,6 +2021,8 @@ v8_source_set("v8_base") {
  }
 
  v8_source_set("v8_libbase") {
@@ -91,7 +103,7 @@ index dcefe37..3600734 100644
    visibility = [ ":*" ]  # Only targets in this file can depend on this.
 
    sources = [
-@@ -2146,6 +2154,8 @@ v8_source_set("v8_libbase") {
+@@ -2146,6 +2156,8 @@ v8_source_set("v8_libbase") {
  }
 
  v8_source_set("v8_libplatform") {
@@ -100,7 +112,7 @@ index dcefe37..3600734 100644
    sources = [
      "//base/trace_event/common/trace_event_common.h",
      "include/libplatform/libplatform.h",
-@@ -2175,6 +2185,8 @@ v8_source_set("v8_libplatform") {
+@@ -2175,6 +2187,8 @@ v8_source_set("v8_libplatform") {
  }
 
  v8_source_set("v8_libsampler") {
@@ -110,98 +122,21 @@ index dcefe37..3600734 100644
      "src/libsampler/sampler.cc",
      "src/libsampler/sampler.h",
 diff --git a/src/snapshot/mksnapshot.cc b/src/snapshot/mksnapshot.cc
-index f4362e5..e11bab9 100644
+index f4362e5..a32e8b2 100644
 --- a/src/snapshot/mksnapshot.cc
 +++ b/src/snapshot/mksnapshot.cc
-@@ -137,48 +137,48 @@ char* GetExtraCode(char* filename, const char* description) {
+@@ -136,6 +136,7 @@ char* GetExtraCode(char* filename, const char* description) {
+
 
  int main(int argc, char** argv) {
++#ifndef SUPPRESS_V8_SNAPSHOT
    // Make mksnapshot runs predictable to create reproducible snapshots.
--  i::FLAG_predictable = true;
--
--  // Print the usage if an error occurs when parsing the command line
--  // flags or if the help flag is set.
--  int result = i::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
--  if (result > 0 || (argc > 3) || i::FLAG_help) {
--    ::printf("Usage: %s --startup_src=... --startup_blob=... [extras]\n",
--             argv[0]);
--    i::FlagList::PrintHelp();
--    return !i::FLAG_help;
--  }
--
--  i::CpuFeatures::Probe(true);
--  V8::InitializeICUDefaultLocation(argv[0]);
--  v8::Platform* platform = v8::platform::CreateDefaultPlatform();
--  v8::V8::InitializePlatform(platform);
--  v8::V8::Initialize();
--
--  {
--    SnapshotWriter writer;
--    if (i::FLAG_startup_src) writer.SetSnapshotFile(i::FLAG_startup_src);
--    if (i::FLAG_startup_blob) writer.SetStartupBlobFile(i::FLAG_startup_blob);
--
--    char* embed_script = GetExtraCode(argc >= 2 ? argv[1] : NULL, "embedding");
--    StartupData blob = v8::V8::CreateSnapshotDataBlob(embed_script);
--    delete[] embed_script;
--
--    char* warmup_script = GetExtraCode(argc >= 3 ? argv[2] : NULL, "warm up");
--    if (warmup_script) {
--      StartupData cold = blob;
--      blob = v8::V8::WarmUpSnapshotDataBlob(cold, warmup_script);
--      delete[] cold.data;
--      delete[] warmup_script;
--    }
--
--    CHECK(blob.data);
--    writer.WriteSnapshot(blob);
--    delete[] blob.data;
--  }
--
--  V8::Dispose();
--  V8::ShutdownPlatform();
--  delete platform;
-+  // i::FLAG_predictable = true;
-+
-+  // // Print the usage if an error occurs when parsing the command line
-+  // // flags or if the help flag is set.
-+  // int result = i::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
-+  // if (result > 0 || (argc > 3) || i::FLAG_help) {
-+  //   ::printf("Usage: %s --startup_src=... --startup_blob=... [extras]\n",
-+  //            argv[0]);
-+  //   i::FlagList::PrintHelp();
-+  //   return !i::FLAG_help;
-+  // }
-+
-+  // i::CpuFeatures::Probe(true);
-+  // V8::InitializeICUDefaultLocation(argv[0]);
-+  // v8::Platform* platform = v8::platform::CreateDefaultPlatform();
-+  // v8::V8::InitializePlatform(platform);
-+  // v8::V8::Initialize();
-+
-+  // {
-+  //   SnapshotWriter writer;
-+  //   if (i::FLAG_startup_src) writer.SetSnapshotFile(i::FLAG_startup_src);
-+  //   if (i::FLAG_startup_blob) writer.SetStartupBlobFile(i::FLAG_startup_blob);
-+
-+  //   char* embed_script = GetExtraCode(argc >= 2 ? argv[1] : NULL, "embedding");
-+  //   StartupData blob = v8::V8::CreateSnapshotDataBlob(embed_script);
-+  //   delete[] embed_script;
-+
-+  //   char* warmup_script = GetExtraCode(argc >= 3 ? argv[2] : NULL, "warm up");
-+  //   if (warmup_script) {
-+  //     StartupData cold = blob;
-+  //     blob = v8::V8::WarmUpSnapshotDataBlob(cold, warmup_script);
-+  //     delete[] cold.data;
-+  //     delete[] warmup_script;
-+  //   }
-+
-+  //   CHECK(blob.data);
-+  //   writer.WriteSnapshot(blob);
-+  //   delete[] blob.data;
-+  // }
-+
-+  // V8::Dispose();
-+  // V8::ShutdownPlatform();
-+  // delete platform;
+   i::FLAG_predictable = true;
+
+@@ -180,5 +181,6 @@ int main(int argc, char** argv) {
+   V8::Dispose();
+   V8::ShutdownPlatform();
+   delete platform;
++#endif
    return 0;
  }
