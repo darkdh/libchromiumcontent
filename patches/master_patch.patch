@@ -1,3 +1,31 @@
+diff --git a/build/config/chrome_build.gni b/build/config/chrome_build.gni
+index c649018..a3a5b95 100644
+--- a/build/config/chrome_build.gni
++++ b/build/config/chrome_build.gni
+@@ -8,15 +8,15 @@ declare_args() {
+   # resources).
+   is_chrome_branded = false
+ 
++  # Refers to the subdirectory for branding in various places including
++  # chrome/app/theme.
++  if (is_chrome_branded) {
++    branding_path_component = "google_chrome"
++  } else {
++    branding_path_component = "chromium"
++  }
++
+   # Break chrome.dll into multple pieces based on process type. Only available
+   # on Windows.
+   is_multi_dll_chrome = is_win && !is_component_build
+ }
+-
+-# Refers to the subdirectory for branding in various places including
+-# chrome/app/theme.
+-if (is_chrome_branded) {
+-  branding_path_component = "google_chrome"
+-} else {
+-  branding_path_component = "chromium"
+-}
 diff --git a/build/toolchain/mac/BUILD.gn b/build/toolchain/mac/BUILD.gn
 index 0c00e99..e565111 100644
 --- a/build/toolchain/mac/BUILD.gn
@@ -45,16 +73,6 @@ index 80378a8..903fabb 100644
  }
  
  if (is_win) {
-diff --git a/chrome/VERSION b/chrome/VERSION
-index 68b2017..fe069b0 100644
---- a/chrome/VERSION
-+++ b/chrome/VERSION
-@@ -1,4 +1,4 @@
- MAJOR=54
- MINOR=0
- BUILD=2840
--PATCH=58
-+PATCH=59
 diff --git a/chrome/browser/extensions/api/messaging/message_service.cc b/chrome/browser/extensions/api/messaging/message_service.cc
 index 0f8d9d8..e29ec83 100644
 --- a/chrome/browser/extensions/api/messaging/message_service.cc
@@ -462,14 +480,16 @@ index 2b42f45..c8d6c51 100644
    }
  
 diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
-index 0a96fa2..4fdad32 100644
+index 0a96fa2..b6c2b52 100644
 --- a/chrome/common/chrome_constants.cc
 +++ b/chrome/common/chrome_constants.cc
-@@ -9,12 +9,13 @@
+@@ -6,15 +6,14 @@
  
+ #include "build/build_config.h"
+ #include "chrome/common/chrome_version.h"
+-
  #define FPL FILE_PATH_LITERAL
  
-+#define EXECUTABLE_NAME PRODUCT_SHORTNAME_STRING
  #if defined(OS_MACOSX)
 -#define CHROMIUM_PRODUCT_STRING "Chromium"
 +#define CHROMIUM_PRODUCT_STRING PRODUCT_SHORTNAME_STRING
@@ -482,7 +502,7 @@ index 0a96fa2..4fdad32 100644
  #else
  #error Unknown branding
  #endif
-@@ -43,13 +44,13 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
+@@ -43,13 +42,13 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
  
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
@@ -500,7 +520,16 @@ index 0a96fa2..4fdad32 100644
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING);
-@@ -69,8 +70,8 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
+@@ -61,7 +60,7 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
+     FPL(PRODUCT_STRING " Helper");
+ #elif defined(OS_ANDROID)
+ // NOTE: Keep it synced with the process names defined in AndroidManifest.xml.
+-const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("chrome");
++const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL(EXECUTABLE_NAME);
+ const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
+     FPL("");
+ const base::FilePath::CharType kHelperProcessExecutableName[] =
+@@ -69,8 +68,8 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] = FPL("");
  #elif defined(OS_POSIX)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
@@ -511,7 +540,7 @@ index 0a96fa2..4fdad32 100644
  // Helper processes end up with a name of "exe" due to execing via
  // /proc/self/exe.  See bug 22703.
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] =
-@@ -80,13 +81,13 @@ const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
+@@ -80,13 +79,13 @@ const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
  
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
@@ -529,7 +558,7 @@ index 0a96fa2..4fdad32 100644
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING ".app/Contents/MacOS/" CHROMIUM_PRODUCT_STRING);
-@@ -98,19 +99,19 @@ const base::FilePath::CharType kHelperProcessExecutablePathChromium[] =
+@@ -98,19 +97,19 @@ const base::FilePath::CharType kHelperProcessExecutablePathChromium[] =
  const base::FilePath::CharType kHelperProcessExecutablePath[] =
      FPL(PRODUCT_STRING " Helper.app/Contents/MacOS/" PRODUCT_STRING " Helper");
  #elif defined(OS_ANDROID)
@@ -557,7 +586,7 @@ index 0a96fa2..4fdad32 100644
  #endif  // OS_*
  
  #if defined(OS_MACOSX)
-@@ -119,8 +120,8 @@ const base::FilePath::CharType kFrameworkName[] =
+@@ -119,8 +118,8 @@ const base::FilePath::CharType kFrameworkName[] =
  #endif  // OS_MACOSX
  
  #if defined(OS_WIN)
@@ -568,6 +597,16 @@ index 0a96fa2..4fdad32 100644
  const base::FilePath::CharType kStatusTrayWindowClass[] =
      FPL("Chrome_StatusTrayWindow");
  #endif  // defined(OS_WIN)
+diff --git a/chrome/common/chrome_version.h.in b/chrome/common/chrome_version.h.in
+index f0a0bcd..888572f 100644
+--- a/chrome/common/chrome_version.h.in
++++ b/chrome/common/chrome_version.h.in
+@@ -22,3 +22,5 @@
+ // Changelist Information
+ 
+ #define LASTCHANGE_STRING "@LASTCHANGE@"
++
++#define EXECUTABLE_NAME "@EXECUTABLE_NAME@"
 diff --git a/chrome/common/mac/app_mode_chrome_locator.mm b/chrome/common/mac/app_mode_chrome_locator.mm
 index efd272e..051851c 100644
 --- a/chrome/common/mac/app_mode_chrome_locator.mm
@@ -627,18 +666,22 @@ index 36693be..a7cee74 100644
            [ "../../ui/views/corewm/desktop_capture_controller_unittest.cc" ]
      }
 diff --git a/chrome/version.gni b/chrome/version.gni
-index a29cb8d..5d5b887 100644
+index a29cb8d..7f65522 100644
 --- a/chrome/version.gni
 +++ b/chrome/version.gni
-@@ -74,7 +74,7 @@ template("process_version") {
-     if (is_chrome_branded) {
-       branding_path = "//chrome/app/theme/google_chrome/BRANDING"
-     } else {
+@@ -71,11 +71,7 @@ template("process_version") {
+ 
+     lastchange_path = "//build/util/LASTCHANGE"
+     version_path = "//chrome/VERSION"
+-    if (is_chrome_branded) {
+-      branding_path = "//chrome/app/theme/google_chrome/BRANDING"
+-    } else {
 -      branding_path = "//chrome/app/theme/chromium/BRANDING"
-+      branding_path = "//chrome/app/theme/brave/BRANDING"
-     }
+-    }
++    branding_path = "//chrome/app/theme/$branding_path_component/BRANDING"
  
      inputs = [
+       version_path,
 diff --git a/components/guest_view/browser/guest_view_base.h b/components/guest_view/browser/guest_view_base.h
 index 320a5e4..06162d7 100644
 --- a/components/guest_view/browser/guest_view_base.h
