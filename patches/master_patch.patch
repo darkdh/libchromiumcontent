@@ -597,6 +597,21 @@ index 0a96fa2..b6c2b52 100644
  const base::FilePath::CharType kStatusTrayWindowClass[] =
      FPL("Chrome_StatusTrayWindow");
  #endif  // defined(OS_WIN)
+diff --git a/chrome/common/chrome_paths_mac.mm b/chrome/common/chrome_paths_mac.mm
+index d0bbbf7..8e96ea5 100644
+--- a/chrome/common/chrome_paths_mac.mm
++++ b/chrome/common/chrome_paths_mac.mm
+@@ -41,7 +41,9 @@ NSBundle* OuterAppBundleInternal() {
+ 
+   // From C.app/Contents/Versions/1.2.3.4, go up three steps to get to C.app.
+   base::FilePath versioned_dir = chrome::GetVersionedDirectory();
+-  base::FilePath outer_app_dir = versioned_dir.DirName().DirName().DirName();
++  // electron uses Frameworks in place of Versions/1.2.3.4
++  // TODO(bridiver) - change this to match chrome
++  base::FilePath outer_app_dir = versioned_dir.DirName().DirName();
+   const char* outer_app_dir_c = outer_app_dir.value().c_str();
+   NSString* outer_app_dir_ns = [NSString stringWithUTF8String:outer_app_dir_c];
+ 
 diff --git a/chrome/common/chrome_version.h.in b/chrome/common/chrome_version.h.in
 index f0a0bcd..888572f 100644
 --- a/chrome/common/chrome_version.h.in
