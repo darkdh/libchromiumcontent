@@ -1129,40 +1129,61 @@ index 5b02de2..da5fdba 100644
  #else
    is_elastic_overscroll_enabled_ = false;
  #endif
-diff --git a/extensions/browser/extension_function_dispatcher.cc b/extensions/browser/extension_function_dispatcher.cc
-index b944303..9284675 100644
---- a/extensions/browser/extension_function_dispatcher.cc
-+++ b/extensions/browser/extension_function_dispatcher.cc
-@@ -590,11 +590,11 @@ bool ExtensionFunctionDispatcher::CheckPermissions(
-     ExtensionFunction* function,
-     const ExtensionHostMsg_Request_Params& params,
-     const ExtensionFunction::ResponseCallback& callback) {
--  if (!function->HasPermission()) {
--    LOG(ERROR) << "Permission denied for " << params.name;
--    SendAccessDenied(callback, function->histogram_value());
--    return false;
--  }
-+  // if (!function->HasPermission()) {
-+  //   LOG(ERROR) << "Permission denied for " << params.name;
-+  //   SendAccessDenied(callback, function->histogram_value());
-+  //   return false;
-+  // }
-   return true;
- }
- 
-diff --git a/extensions/common/features/simple_feature.cc b/extensions/common/features/simple_feature.cc
-index 048fcfb..9cd13c5 100644
---- a/extensions/common/features/simple_feature.cc
-+++ b/extensions/common/features/simple_feature.cc
-@@ -258,6 +258,8 @@ Feature::Availability SimpleFeature::IsAvailableToContext(
-     SimpleFeature::Context context,
-     const GURL& url,
-     SimpleFeature::Platform platform) const {
-+  return CreateAvailability(IS_AVAILABLE, context);
-+
-   if (extension) {
-     Availability result = IsAvailableToManifest(extension->id(),
-                                                 extension->GetType(),
+diff --git a/extensions/common/api/_api_features.json b/extensions/common/api/_api_features.json
+index 9b060a8..0d8caf1 100644
+--- a/extensions/common/api/_api_features.json
++++ b/extensions/common/api/_api_features.json
+@@ -143,7 +143,7 @@
+   },
+   "clipboard": {
+     "dependencies": ["permission:clipboard", "permission:clipboardRead"],
+-    "contexts": ["blessed_extension"]       
++    "contexts": ["blessed_extension"]
+   },
+   "declarativeWebRequest": {
+     "dependencies": ["permission:declarativeWebRequest"],
+@@ -200,7 +200,10 @@
+     {
+       "internal": true,
+       "channel": "stable",
+-      "contexts": ["blessed_extension"]
++      "contexts": ["blessed_extension", "webui"],
++      "matches": [
++        "chrome://brave/*"
++      ]
+     }, {
+       "internal": true,
+       "channel": "trunk",
+@@ -471,6 +474,7 @@
+     "internal": true,
+     "contexts": ["webui"],
+     "matches": [
++      "chrome://brave/*",
+       "chrome://chrome-signin/*",
+       "chrome://media-router/*",
+       "chrome://oobe/*"
+@@ -489,6 +493,13 @@
+       "chrome://media-router/*",
+       "chrome://oobe/*"
+     ]
++  }, {
++    "internal": true,
++    "channel": "stable",
++    "contexts": ["webui"],
++    "matches": [
++      "chrome://brave/*"
++    ]
+   }],
+   "webViewRequest": [{
+     "dependencies": ["permission:webview"],
+@@ -497,6 +508,7 @@
+     "channel": "stable",
+     "contexts": ["webui"],
+     "matches": [
++      "chrome://brave/*",
+       "chrome://chrome-signin/*",
+       "chrome://media-router/*",
+       "chrome://oobe/*"
 diff --git a/extensions/renderer/resources/guest_view/guest_view_container.js b/extensions/renderer/resources/guest_view/guest_view_container.js
 index 8cfc8cb..606282f 100644
 --- a/extensions/renderer/resources/guest_view/guest_view_container.js
