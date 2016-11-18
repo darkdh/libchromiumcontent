@@ -479,31 +479,18 @@ index 2b42f45..c8d6c51 100644
      }
    }
  
-diff --git a/chrome/chrome_common.gypi b/chrome/chrome_common.gypi
-index 8492d96..edee6e7 100644
---- a/chrome/chrome_common.gypi
-+++ b/chrome/chrome_common.gypi
-@@ -245,6 +245,7 @@
-       'common/importer/ie_importer_utils_win.h',
-       'common/importer/imported_bookmark_entry.cc',
-       'common/importer/imported_bookmark_entry.h',
-+      'common/importer/imported_cookie_entry.h',
-       'common/importer/importer_autofill_form_data_entry.cc',
-       'common/importer/importer_autofill_form_data_entry.h',
-       'common/importer/importer_bridge.cc',
-diff --git a/chrome/chrome_utility.gypi b/chrome/chrome_utility.gypi
-index 13976c0..856a235 100644
---- a/chrome/chrome_utility.gypi
-+++ b/chrome/chrome_utility.gypi
-@@ -42,6 +42,8 @@
-       'utility/importer/bookmark_html_reader.h',
-       'utility/importer/bookmarks_file_importer.cc',
-       'utility/importer/bookmarks_file_importer.h',
-+      "utility/importer/chrome_importer.cc",
-+      "utility/importer/chrome_importer.h",
-       'utility/importer/edge_database_reader_win.cc',
-       'utility/importer/edge_database_reader_win.h',
-       'utility/importer/edge_importer_win.cc',
+diff --git a/chrome/common/BUILD.gn b/chrome/common/BUILD.gn
+index 4653292..34aee93 100644
+--- a/chrome/common/BUILD.gn
++++ b/chrome/common/BUILD.gn
+@@ -222,6 +222,7 @@ static_library("common") {
+     # Non-Android.
+     sources +=
+         rebase_path(gypi_values.chrome_common_importer_sources, ".", "//chrome")
++    include_dirs = [ "//electron" ]
+   }
+ 
+   if (is_chromeos) {
 diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
 index 0a96fa2..b6c2b52 100644
 --- a/chrome/common/chrome_constants.cc
@@ -662,24 +649,10 @@ index c2abd64..fcfa405 100644
  
  bool EdgeImporterCanImport() {
 diff --git a/chrome/common/importer/importer_bridge.h b/chrome/common/importer/importer_bridge.h
-index d3fa66b..0992868 100644
+index d3fa66b..d2b88d3 100644
 --- a/chrome/common/importer/importer_bridge.h
 +++ b/chrome/common/importer/importer_bridge.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add SetCookies.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #ifndef CHROME_COMMON_IMPORTER_IMPORTER_BRIDGE_H_
- #define CHROME_COMMON_IMPORTER_IMPORTER_BRIDGE_H_
- 
-@@ -24,6 +31,8 @@ namespace autofill {
+@@ -24,6 +24,8 @@ namespace autofill {
  struct PasswordForm;
  }
  
@@ -688,7 +661,7 @@ index d3fa66b..0992868 100644
  namespace importer {
  #if defined(OS_WIN)
  struct ImporterIE7PasswordInfo;
-@@ -67,6 +76,8 @@ class ImporterBridge : public base::RefCountedThreadSafe<ImporterBridge> {
+@@ -67,6 +69,8 @@ class ImporterBridge : public base::RefCountedThreadSafe<ImporterBridge> {
    virtual void SetAutofillFormData(
        const std::vector<ImporterAutofillFormDataEntry>& entries) = 0;
  
@@ -698,24 +671,10 @@ index d3fa66b..0992868 100644
    virtual void NotifyStarted() = 0;
  
 diff --git a/chrome/common/importer/importer_data_types.h b/chrome/common/importer/importer_data_types.h
-index be8163f..c4e307c 100644
+index be8163f..a91d871 100644
 --- a/chrome/common/importer/importer_data_types.h
 +++ b/chrome/common/importer/importer_data_types.h
-@@ -1,6 +1,13 @@
- // Copyright 2013 The Chromium Authors. All rights reserved.
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
-+//
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add VISIT_SOURCE_CHROME_IMPORTED.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
- 
- #ifndef CHROME_COMMON_IMPORTER_IMPORTER_DATA_TYPES_H_
- #define CHROME_COMMON_IMPORTER_IMPORTER_DATA_TYPES_H_
-@@ -83,6 +90,7 @@ enum VisitSource {
+@@ -83,6 +83,7 @@ enum VisitSource {
    VISIT_SOURCE_FIREFOX_IMPORTED = 1,
    VISIT_SOURCE_IE_IMPORTED = 2,
    VISIT_SOURCE_SAFARI_IMPORTED = 3,
@@ -724,24 +683,10 @@ index be8163f..c4e307c 100644
  
  }  // namespace importer
 diff --git a/chrome/common/importer/importer_type.h b/chrome/common/importer/importer_type.h
-index c172f8a..800a7ad 100644
+index c172f8a..a467f33 100644
 --- a/chrome/common/importer/importer_type.h
 +++ b/chrome/common/importer/importer_type.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * add TYPE_CHROME for chrome profile.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #ifndef CHROME_COMMON_IMPORTER_IMPORTER_TYPE_H_
- #define CHROME_COMMON_IMPORTER_IMPORTER_TYPE_H_
- 
-@@ -19,6 +26,8 @@ enum ImporterType {
+@@ -19,6 +19,8 @@ enum ImporterType {
    TYPE_IE              = 0,
  #endif
    // Value 1 was the (now deleted) Firefox 2 profile importer.
@@ -751,32 +696,18 @@ index c172f8a..800a7ad 100644
  #if defined(OS_MACOSX)
    TYPE_SAFARI          = 3,
 diff --git a/chrome/common/importer/profile_import_process_messages.h b/chrome/common/importer/profile_import_process_messages.h
-index e53c171..677d616 100644
+index e53c171..3579ced 100644
 --- a/chrome/common/importer/profile_import_process_messages.h
 +++ b/chrome/common/importer/profile_import_process_messages.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
+@@ -8,6 +8,7 @@
  
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add NotifyCookiesImportStart and NotifyCookiesImportGroup.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- // Multiply-included message file, no traditonal include guard.
- #include <string>
- #include <vector>
-@@ -11,6 +18,7 @@
+ #include "base/strings/string16.h"
+ #include "base/values.h"
++#include "brave/common/importer/imported_cookie_entry.h"
  #include "build/build_config.h"
  #include "chrome/common/common_param_traits_macros.h"
  #include "chrome/common/importer/imported_bookmark_entry.h"
-+#include "chrome/common/importer/imported_cookie_entry.h"
- #include "chrome/common/importer/importer_autofill_form_data_entry.h"
- #include "chrome/common/importer/importer_data_types.h"
- #include "chrome/common/importer/importer_url_row.h"
-@@ -99,6 +107,12 @@ IPC_MESSAGE_CONTROL1(ProfileImportProcessHostMsg_AutofillFormDataImportStart,
+@@ -99,6 +100,12 @@ IPC_MESSAGE_CONTROL1(ProfileImportProcessHostMsg_AutofillFormDataImportStart,
  IPC_MESSAGE_CONTROL1(ProfileImportProcessHostMsg_AutofillFormDataImportGroup,
                       std::vector<ImporterAutofillFormDataEntry>)
  
@@ -790,32 +721,18 @@ index e53c171..677d616 100644
  IPC_MESSAGE_CONTROL1(ProfileImportProcessHostMsg_NotifyIE7PasswordInfo,
                       importer::ImporterIE7PasswordInfo) // password_info
 diff --git a/chrome/common/importer/profile_import_process_param_traits_macros.h b/chrome/common/importer/profile_import_process_param_traits_macros.h
-index 8e8b0c6..4f1b9a8 100644
+index 8e8b0c6..5a22e10 100644
 --- a/chrome/common/importer/profile_import_process_param_traits_macros.h
 +++ b/chrome/common/importer/profile_import_process_param_traits_macros.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
+@@ -13,6 +13,7 @@
  
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add traits for ImportedCookieEntry.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- // Singly or Multiply-included shared traits file depending on circumstances.
- // This allows the use of IPC serialization macros in more than one IPC message
- // file.
-@@ -16,6 +23,7 @@
+ #include "base/strings/string16.h"
+ #include "base/values.h"
++#include "brave/common/importer/imported_cookie_entry.h"
  #include "build/build_config.h"
  #include "chrome/common/common_param_traits_macros.h"
  #include "chrome/common/importer/imported_bookmark_entry.h"
-+#include "chrome/common/importer/imported_cookie_entry.h"
- #include "chrome/common/importer/importer_autofill_form_data_entry.h"
- #include "chrome/common/importer/importer_data_types.h"
- #include "chrome/common/importer/importer_url_row.h"
-@@ -82,6 +90,17 @@ IPC_STRUCT_TRAITS_BEGIN(ImporterAutofillFormDataEntry)
+@@ -82,6 +83,17 @@ IPC_STRUCT_TRAITS_BEGIN(ImporterAutofillFormDataEntry)
    IPC_STRUCT_TRAITS_MEMBER(last_used)
  IPC_STRUCT_TRAITS_END()
  
@@ -892,37 +809,22 @@ index 36693be..a7cee74 100644
            [ "../../ui/views/corewm/desktop_capture_controller_unittest.cc" ]
      }
 diff --git a/chrome/utility/BUILD.gn b/chrome/utility/BUILD.gn
-index 2f5c4f4..0b011274 100644
+index 2f5c4f4..30e83e8 100644
 --- a/chrome/utility/BUILD.gn
 +++ b/chrome/utility/BUILD.gn
-@@ -56,7 +56,7 @@ static_library("utility") {
-       "//net:net_utility_services",
+@@ -57,6 +57,7 @@ static_library("utility") {
      ]
      sources +=
--        rebase_path(gypi_values.chrome_utility_importer_sources, ".", "..")
-+      rebase_path(gypi_values.chrome_utility_importer_sources, ".", "..")
+         rebase_path(gypi_values.chrome_utility_importer_sources, ".", "..")
++    include_dirs = [ "//electron" ]
    }
  
    if (enable_extensions) {
 diff --git a/chrome/utility/importer/external_process_importer_bridge.cc b/chrome/utility/importer/external_process_importer_bridge.cc
-index d1e4cda..c27d2c7 100644
+index d1e4cda..a808253 100644
 --- a/chrome/utility/importer/external_process_importer_bridge.cc
 +++ b/chrome/utility/importer/external_process_importer_bridge.cc
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add SetCookies.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #include "chrome/utility/importer/external_process_importer_bridge.h"
- 
- #include "base/bind.h"
-@@ -27,6 +34,7 @@ const int kNumBookmarksToSend = 100;
+@@ -27,6 +27,7 @@ const int kNumBookmarksToSend = 100;
  const int kNumHistoryRowsToSend = 100;
  const int kNumFaviconsToSend = 100;
  const int kNumAutofillFormDataToSend = 100;
@@ -930,7 +832,7 @@ index d1e4cda..c27d2c7 100644
  
  } // namespace
  
-@@ -170,6 +178,30 @@ void ExternalProcessImporterBridge::SetAutofillFormData(
+@@ -170,6 +171,30 @@ void ExternalProcessImporterBridge::SetAutofillFormData(
    DCHECK_EQ(0, autofill_form_data_entries_left);
  }
  
@@ -962,24 +864,10 @@ index d1e4cda..c27d2c7 100644
    Send(new ProfileImportProcessHostMsg_Import_Started());
  }
 diff --git a/chrome/utility/importer/external_process_importer_bridge.h b/chrome/utility/importer/external_process_importer_bridge.h
-index 0a22e7e..bd46262 100644
+index 0a22e7e..2b75e70 100644
 --- a/chrome/utility/importer/external_process_importer_bridge.h
 +++ b/chrome/utility/importer/external_process_importer_bridge.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add SetCookies.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #ifndef CHROME_UTILITY_IMPORTER_EXTERNAL_PROCESS_IMPORTER_BRIDGE_H_
- #define CHROME_UTILITY_IMPORTER_EXTERNAL_PROCESS_IMPORTER_BRIDGE_H_
- 
-@@ -76,6 +83,8 @@ class ExternalProcessImporterBridge : public ImporterBridge {
+@@ -76,6 +76,8 @@ class ExternalProcessImporterBridge : public ImporterBridge {
    void SetAutofillFormData(
        const std::vector<ImporterAutofillFormDataEntry>& entries) override;
  
@@ -989,32 +877,18 @@ index 0a22e7e..bd46262 100644
    void NotifyItemStarted(importer::ImportItem item) override;
    void NotifyItemEnded(importer::ImportItem item) override;
 diff --git a/chrome/utility/importer/firefox_importer.cc b/chrome/utility/importer/firefox_importer.cc
-index e487c92..91a2f34 100644
+index e487c92..0bc2770 100644
 --- a/chrome/utility/importer/firefox_importer.cc
 +++ b/chrome/utility/importer/firefox_importer.cc
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add ImportCookie and fix broken ImportBookmarks.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #include "chrome/utility/importer/firefox_importer.h"
- 
- #include <memory>
-@@ -18,6 +25,7 @@
+@@ -15,6 +15,7 @@
+ #include "base/stl_util.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "brave/common/importer/imported_cookie_entry.h"
  #include "build/build_config.h"
  #include "chrome/common/importer/firefox_importer_utils.h"
  #include "chrome/common/importer/imported_bookmark_entry.h"
-+#include "chrome/common/importer/imported_cookie_entry.h"
- #include "chrome/common/importer/importer_autofill_form_data_entry.h"
- #include "chrome/common/importer/importer_bridge.h"
- #include "chrome/common/importer/importer_url_row.h"
-@@ -147,6 +155,11 @@ void FirefoxImporter::StartImport(const importer::SourceProfile& source_profile,
+@@ -147,6 +148,11 @@ void FirefoxImporter::StartImport(const importer::SourceProfile& source_profile,
      ImportAutofillFormData();
      bridge_->NotifyItemEnded(importer::AUTOFILL_FORM_DATA);
    }
@@ -1026,7 +900,7 @@ index e487c92..91a2f34 100644
    bridge_->NotifyEnded();
  }
  
-@@ -535,6 +548,50 @@ void FirefoxImporter::GetSearchEnginesXMLData(
+@@ -535,6 +541,50 @@ void FirefoxImporter::GetSearchEnginesXMLData(
    }
  }
  
@@ -1077,7 +951,7 @@ index e487c92..91a2f34 100644
  void FirefoxImporter::GetSearchEnginesXMLDataFromJSON(
      std::vector<std::string>* search_engine_data) {
    // search-metadata.json contains keywords for search engines. This
-@@ -651,11 +708,18 @@ void FirefoxImporter::LoadRootNodeID(sql::Connection* db,
+@@ -651,11 +701,18 @@ void FirefoxImporter::LoadRootNodeID(sql::Connection* db,
                                        int* toolbar_folder_id,
                                        int* menu_folder_id,
                                        int* unsorted_folder_id) {
@@ -1099,24 +973,10 @@ index e487c92..91a2f34 100644
  
    while (s.Step()) {
 diff --git a/chrome/utility/importer/firefox_importer.h b/chrome/utility/importer/firefox_importer.h
-index 28bf603..00055f8f 100644
+index 28bf603..3b10bba 100644
 --- a/chrome/utility/importer/firefox_importer.h
 +++ b/chrome/utility/importer/firefox_importer.h
-@@ -2,6 +2,13 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add ImportCookie and fix broken ImportBookmarks.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #ifndef CHROME_UTILITY_IMPORTER_FIREFOX_IMPORTER_H_
- #define CHROME_UTILITY_IMPORTER_FIREFOX_IMPORTER_H_
- 
-@@ -51,6 +58,7 @@ class FirefoxImporter : public Importer {
+@@ -51,6 +51,7 @@ class FirefoxImporter : public Importer {
    // defined in browserconfig.properties.
    void ImportHomepage();
    void ImportAutofillFormData();
@@ -1125,30 +985,18 @@ index 28bf603..00055f8f 100644
    void GetSearchEnginesXMLDataFromJSON(
        std::vector<std::string>* search_engine_data);
 diff --git a/chrome/utility/importer/importer_creator.cc b/chrome/utility/importer/importer_creator.cc
-index 2bef627..7054e65 100644
+index 2bef627..6cdf479 100644
 --- a/chrome/utility/importer/importer_creator.cc
 +++ b/chrome/utility/importer/importer_creator.cc
-@@ -2,11 +2,19 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+/**
-+ * This is not a straight copy from chromium src, in particular
-+ * we add chrome importer.
-+ * This was originally forked with 52.0.2743.116.  Diff against
-+ * a version of that file for a full list of changes.
-+ */
-+
- #include "chrome/utility/importer/importer_creator.h"
+@@ -6,6 +6,7 @@
  
  #include "base/logging.h"
  #include "build/build_config.h"
++#include "brave/utility/importer/chrome_importer.h"
  #include "chrome/utility/importer/bookmarks_file_importer.h"
-+#include "chrome/utility/importer/chrome_importer.h"
  #include "chrome/utility/importer/firefox_importer.h"
  
- #if defined(OS_WIN)
-@@ -43,6 +51,8 @@ scoped_refptr<Importer> CreateImporterByType(ImporterType type) {
+@@ -43,6 +44,8 @@ scoped_refptr<Importer> CreateImporterByType(ImporterType type) {
      case TYPE_SAFARI:
        return new SafariImporter(base::mac::GetUserLibraryPath());
  #endif
