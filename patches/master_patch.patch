@@ -492,7 +492,7 @@ index 4653292..34aee93 100644
  
    if (is_chromeos) {
 diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
-index 0a96fa2..ee2adb9 100644
+index 0a96fa2..c6ed25b 100644
 --- a/chrome/common/chrome_constants.cc
 +++ b/chrome/common/chrome_constants.cc
 @@ -10,11 +10,11 @@
@@ -515,16 +515,16 @@ index 0a96fa2..ee2adb9 100644
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kBrowserProcessExecutableName[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kHelperProcessExecutableName[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING);
@@ -553,16 +553,16 @@ index 0a96fa2..ee2adb9 100644
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kBrowserProcessExecutablePath[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kHelperProcessExecutablePathChromium[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  const base::FilePath::CharType kHelperProcessExecutablePath[] =
 -    FPL("chrome.exe");
-+    FPL(EXECUTABLE_NAME ".exe");
++    FPL("Brave.exe");
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING ".app/Contents/MacOS/" CHROMIUM_PRODUCT_STRING);
@@ -600,8 +600,8 @@ index 0a96fa2..ee2adb9 100644
  #if defined(OS_WIN)
 -const base::FilePath::CharType kBrowserResourcesDll[] = FPL("chrome.dll");
 -const base::FilePath::CharType kChromeElfDllName[] = FPL("chrome_elf.dll");
-+const base::FilePath::CharType kBrowserResourcesDll[] = FPL(EXECUTABLE_NAME ".dll");
-+const base::FilePath::CharType kChromeElfDllName[] = FPL(EXECUTABLE_NAME "_elf.dll");
++const base::FilePath::CharType kBrowserResourcesDll[] = FPL("Brave.dll");
++const base::FilePath::CharType kChromeElfDllName[] = FPL("Brave_elf.dll");
  const base::FilePath::CharType kStatusTrayWindowClass[] =
      FPL("Chrome_StatusTrayWindow");
  #endif  // defined(OS_WIN)
