@@ -492,14 +492,10 @@ index 4653292..34aee93 100644
  
    if (is_chromeos) {
 diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
-index 0a96fa2..b6c2b52 100644
+index 0a96fa2..ee2adb9 100644
 --- a/chrome/common/chrome_constants.cc
 +++ b/chrome/common/chrome_constants.cc
-@@ -6,15 +6,14 @@
- 
- #include "build/build_config.h"
- #include "chrome/common/chrome_version.h"
--
+@@ -10,11 +10,11 @@
  #define FPL FILE_PATH_LITERAL
  
  #if defined(OS_MACOSX)
@@ -514,7 +510,7 @@ index 0a96fa2..b6c2b52 100644
  #else
  #error Unknown branding
  #endif
-@@ -43,13 +42,13 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
+@@ -43,13 +43,13 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
  
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
@@ -532,7 +528,7 @@ index 0a96fa2..b6c2b52 100644
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING);
-@@ -61,7 +60,7 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
+@@ -61,7 +61,7 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
      FPL(PRODUCT_STRING " Helper");
  #elif defined(OS_ANDROID)
  // NOTE: Keep it synced with the process names defined in AndroidManifest.xml.
@@ -541,7 +537,7 @@ index 0a96fa2..b6c2b52 100644
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
      FPL("");
  const base::FilePath::CharType kHelperProcessExecutableName[] =
-@@ -69,8 +68,8 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
+@@ -69,8 +69,8 @@ const base::FilePath::CharType kHelperProcessExecutableName[] =
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] = FPL("");
  #elif defined(OS_POSIX)
  const base::FilePath::CharType kBrowserProcessExecutableNameChromium[] =
@@ -552,7 +548,7 @@ index 0a96fa2..b6c2b52 100644
  // Helper processes end up with a name of "exe" due to execing via
  // /proc/self/exe.  See bug 22703.
  const base::FilePath::CharType kHelperProcessExecutableNameChromium[] =
-@@ -80,13 +79,13 @@ const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
+@@ -80,13 +80,13 @@ const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
  
  #if defined(OS_WIN)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
@@ -570,7 +566,7 @@ index 0a96fa2..b6c2b52 100644
  #elif defined(OS_MACOSX)
  const base::FilePath::CharType kBrowserProcessExecutablePathChromium[] =
      FPL(CHROMIUM_PRODUCT_STRING ".app/Contents/MacOS/" CHROMIUM_PRODUCT_STRING);
-@@ -98,19 +97,19 @@ const base::FilePath::CharType kHelperProcessExecutablePathChromium[] =
+@@ -98,19 +98,19 @@ const base::FilePath::CharType kHelperProcessExecutablePathChromium[] =
  const base::FilePath::CharType kHelperProcessExecutablePath[] =
      FPL(PRODUCT_STRING " Helper.app/Contents/MacOS/" PRODUCT_STRING " Helper");
  #elif defined(OS_ANDROID)
@@ -598,7 +594,7 @@ index 0a96fa2..b6c2b52 100644
  #endif  // OS_*
  
  #if defined(OS_MACOSX)
-@@ -119,8 +118,8 @@ const base::FilePath::CharType kFrameworkName[] =
+@@ -119,8 +119,8 @@ const base::FilePath::CharType kFrameworkName[] =
  #endif  // OS_MACOSX
  
  #if defined(OS_WIN)
@@ -1696,6 +1692,23 @@ index 668bbfd..85a6c28 100644
  
      BLINK_EXPORT void reset();
      BLINK_EXPORT void assign(const WebArrayBuffer&);
+diff --git a/third_party/widevine/cdm/BUILD.gn b/third_party/widevine/cdm/BUILD.gn
+index e5fdb29..55a8b13 100644
+--- a/third_party/widevine/cdm/BUILD.gn
++++ b/third_party/widevine/cdm/BUILD.gn
+@@ -96,9 +96,9 @@ if (widevine_cdm_binary_files != []) {
+     if (is_mac) {
+       ldflags = [
+         # Not to strip important symbols by -Wl,-dead_strip.
+-        "-Wl,-exported_symbol,_PPP_GetInterface",
+-        "-Wl,-exported_symbol,_PPP_InitializeModule",
+-        "-Wl,-exported_symbol,_PPP_ShutdownModule",
++        # "-Wl,-exported_symbol,_PPP_GetInterface",
++        # "-Wl,-exported_symbol,_PPP_InitializeModule",
++        # "-Wl,-exported_symbol,_PPP_ShutdownModule",
+       ]
+       #TODO(jrummell) Mac: 'DYLIB_INSTALL_NAME_BASE': '@loader_path',
+     } else if (is_posix && !is_mac) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
 index 5accf0e..1b93b7b 100644
 --- a/ui/base/BUILD.gn
