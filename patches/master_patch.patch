@@ -199,6 +199,19 @@ index ceb16a4..7a0690f 100644
    return plugin_prefs_->IsPluginEnabled(plugin);
  }
 +#endif
+diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
+index 179c44c..5abd0b6 100644
+--- a/chrome/browser/printing/print_view_manager_base.cc
++++ b/chrome/browser/printing/print_view_manager_base.cc
+@@ -61,7 +61,7 @@ void ShowWarningMessageBox(const base::string16& message) {
+   // Block opening dialog from nested task.
+   base::AutoReset<bool> auto_reset(&is_dialog_shown, true);
+ 
+-  chrome::ShowWarningMessageBox(nullptr, base::string16(), message);
++  // chrome::ShowWarningMessageBox(nullptr, base::string16(), message);
+ }
+ 
+ }  // namespace
 diff --git a/chrome/browser/renderer_host/chrome_extension_message_filter.cc b/chrome/browser/renderer_host/chrome_extension_message_filter.cc
 index a34a8ac..ac93870 100644
 --- a/chrome/browser/renderer_host/chrome_extension_message_filter.cc
@@ -1031,6 +1044,68 @@ index 320a5e4..06162d7 100644
    void DidAttach(int guest_proxy_routing_id) final;
    void DidDetach() final;
    content::WebContents* GetOwnerWebContents() const final;
+diff --git a/components/printing/common/print_messages.h b/components/printing/common/print_messages.h
+index a019144..1d2a3a1 100644
+--- a/components/printing/common/print_messages.h
++++ b/components/printing/common/print_messages.h
+@@ -218,7 +218,6 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_PrintPages_Params)
+   IPC_STRUCT_TRAITS_MEMBER(pages)
+ IPC_STRUCT_TRAITS_END()
+ 
+-#if defined(ENABLE_PRINT_PREVIEW)
+ // Parameters to describe a rendered document.
+ IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewDocument_Params)
+   // A shared memory handle to metafile data.
+@@ -240,6 +239,7 @@ IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewDocument_Params)
+   IPC_STRUCT_MEMBER(int, preview_request_id)
+ IPC_STRUCT_END()
+ 
++#if defined(ENABLE_PRINT_PREVIEW)
+ // Parameters to describe a rendered preview page.
+ IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewPage_Params)
+   // A shared memory handle to metafile data for a draft document of the page.
+@@ -345,13 +345,11 @@ IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
+ IPC_MESSAGE_ROUTED1(PrintMsg_SetScriptedPrintingBlocked,
+                     bool /* blocked */)
+ 
+-#if defined(ENABLE_PRINT_PREVIEW)
+ // Tells the render view to switch the CSS to print media type, renders every
+ // requested pages for print preview using the given |settings|. This gets
+ // called multiple times as the user updates settings.
+ IPC_MESSAGE_ROUTED1(PrintMsg_PrintPreview,
+                     base::DictionaryValue /* settings */)
+-#endif  // defined(ENABLE_PRINT_PREVIEW)
+ 
+ // Messages sent from the renderer to the browser.
+ 
+@@ -439,13 +437,13 @@ IPC_SYNC_MESSAGE_ROUTED2_1(PrintHostMsg_CheckForCancel,
+                            int32_t /* PrintPreviewUI ID */,
+                            int /* request id */,
+                            bool /* print preview cancelled */)
++#endif  // defined(ENABLE_PRINT_PREVIEW)
+ 
+ // Sends back to the browser the complete rendered document (non-draft mode,
+ // used for printing) that was requested by a PrintMsg_PrintPreview message.
+ // The memory handle in this message is already valid in the browser process.
+ IPC_MESSAGE_ROUTED1(PrintHostMsg_MetafileReadyForPrinting,
+                     PrintHostMsg_DidPreviewDocument_Params /* params */)
+-#endif  // defined(ENABLE_PRINT_PREVIEW)
+ 
+ // This is sent when there are invalid printer settings.
+ IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
+@@ -454,11 +452,11 @@ IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
+ IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed,
+                     int /* document cookie */)
+ 
+-#if defined(ENABLE_PRINT_PREVIEW)
+ // Tell the browser print preview failed.
+ IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintPreviewFailed,
+                     int /* document cookie */)
+ 
++#if defined(ENABLE_PRINT_PREVIEW)
+ // Tell the browser print preview was cancelled.
+ IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintPreviewCancelled,
+                     int /* document cookie */)
 diff --git a/content/app/content_main_runner.cc b/content/app/content_main_runner.cc
 index 01bb5f0..9584584 100644
 --- a/content/app/content_main_runner.cc
