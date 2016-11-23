@@ -147,11 +147,24 @@ index dcefe37..52b8689 100644
      "src/libsampler/sampler.cc",
      "src/libsampler/sampler.h",
 diff --git a/src/snapshot/mksnapshot.cc b/src/snapshot/mksnapshot.cc
-index f4362e5..a32e8b2 100644
+index f4362e5..2ef50ba 100644
 --- a/src/snapshot/mksnapshot.cc
 +++ b/src/snapshot/mksnapshot.cc
-@@ -136,6 +136,7 @@ char* GetExtraCode(char* filename, const char* description) {
+@@ -16,7 +16,7 @@
+ #include "src/snapshot/startup-serializer.h"
  
+ using namespace v8;
+-
++#ifndef SUPPRESS_V8_SNAPSHOT
+ class SnapshotWriter {
+  public:
+   SnapshotWriter() : fp_(NULL), startup_blob_file_(NULL) {}
+@@ -133,9 +133,10 @@ char* GetExtraCode(char* filename, const char* description) {
+   fclose(file);
+   return chars;
+ }
+-
++#endif
  
  int main(int argc, char** argv) {
 +#ifndef SUPPRESS_V8_SNAPSHOT
