@@ -1,5 +1,5 @@
 diff --git a/BUILD.gn b/BUILD.gn
-index dcefe37..3eaab61 100644
+index dcefe37..c234e79 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -45,7 +45,7 @@ declare_args() {
@@ -75,7 +75,18 @@ index dcefe37..3eaab61 100644
    # Only targets in this file and the top-level visibility target can
    # depend on this.
    visibility = [
-@@ -805,6 +828,10 @@ if (v8_use_external_startup_data) {
+@@ -781,6 +804,10 @@ v8_source_set("v8_snapshot") {
+ 
+ if (v8_use_external_startup_data) {
+   v8_source_set("v8_external_snapshot") {
++    if (suppress_v8) {
++      set_sources_assignment_filter(["*"])
++    }
++    
+     visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+     deps = [
+@@ -805,6 +832,10 @@ if (v8_use_external_startup_data) {
  }
  
  v8_source_set("v8_base") {
@@ -86,7 +97,7 @@ index dcefe37..3eaab61 100644
    visibility = [ ":*" ]  # Only targets in this file can depend on this.
  
    sources = [
-@@ -1986,8 +2013,10 @@ v8_source_set("v8_base") {
+@@ -1986,8 +2017,10 @@ v8_source_set("v8_base") {
      ":v8_libsampler",
    ]
  
@@ -99,7 +110,7 @@ index dcefe37..3eaab61 100644
  
    if (is_win) {
      # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
-@@ -2001,8 +2030,8 @@ v8_source_set("v8_base") {
+@@ -2001,8 +2034,8 @@ v8_source_set("v8_base") {
      }
    } else {
      sources -= [
@@ -110,7 +121,7 @@ index dcefe37..3eaab61 100644
      ]
    }
  
-@@ -2013,6 +2042,10 @@ v8_source_set("v8_base") {
+@@ -2013,6 +2046,10 @@ v8_source_set("v8_base") {
  }
  
  v8_source_set("v8_libbase") {
@@ -121,7 +132,7 @@ index dcefe37..3eaab61 100644
    visibility = [ ":*" ]  # Only targets in this file can depend on this.
  
    sources = [
-@@ -2146,6 +2179,10 @@ v8_source_set("v8_libbase") {
+@@ -2146,6 +2183,10 @@ v8_source_set("v8_libbase") {
  }
  
  v8_source_set("v8_libplatform") {
@@ -132,7 +143,7 @@ index dcefe37..3eaab61 100644
    sources = [
      "//base/trace_event/common/trace_event_common.h",
      "include/libplatform/libplatform.h",
-@@ -2175,6 +2212,10 @@ v8_source_set("v8_libplatform") {
+@@ -2175,6 +2216,10 @@ v8_source_set("v8_libplatform") {
  }
  
  v8_source_set("v8_libsampler") {
@@ -144,19 +155,27 @@ index dcefe37..3eaab61 100644
      "src/libsampler/sampler.cc",
      "src/libsampler/sampler.h",
 diff --git a/src/snapshot/mksnapshot.cc b/src/snapshot/mksnapshot.cc
-index f4362e5..2ef50ba 100644
+index f4362e5..e048e26 100644
 --- a/src/snapshot/mksnapshot.cc
 +++ b/src/snapshot/mksnapshot.cc
-@@ -16,7 +16,7 @@
+@@ -5,7 +5,7 @@
+ #include <errno.h>
+ #include <signal.h>
+ #include <stdio.h>
+-
++#ifndef SUPPRESS_V8_SNAPSHOT
+ #include "include/libplatform/libplatform.h"
+ #include "src/assembler.h"
+ #include "src/base/platform/platform.h"
+@@ -16,7 +16,6 @@
  #include "src/snapshot/startup-serializer.h"
  
  using namespace v8;
 -
-+#ifndef SUPPRESS_V8_SNAPSHOT
  class SnapshotWriter {
   public:
    SnapshotWriter() : fp_(NULL), startup_blob_file_(NULL) {}
-@@ -133,9 +133,10 @@ char* GetExtraCode(char* filename, const char* description) {
+@@ -133,9 +132,10 @@ char* GetExtraCode(char* filename, const char* description) {
    fclose(file);
    return chars;
  }
@@ -168,7 +187,7 @@ index f4362e5..2ef50ba 100644
    // Make mksnapshot runs predictable to create reproducible snapshots.
    i::FLAG_predictable = true;
  
-@@ -180,5 +181,6 @@ int main(int argc, char** argv) {
+@@ -180,5 +180,6 @@ int main(int argc, char** argv) {
    V8::Dispose();
    V8::ShutdownPlatform();
    delete platform;
