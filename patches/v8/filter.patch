@@ -1,5 +1,5 @@
 diff --git a/BUILD.gn b/BUILD.gn
-index dcefe37..c234e79 100644
+index dcefe3706b..c234e795c5 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -45,7 +45,7 @@ declare_args() {
@@ -155,7 +155,7 @@ index dcefe37..c234e79 100644
      "src/libsampler/sampler.cc",
      "src/libsampler/sampler.h",
 diff --git a/src/snapshot/mksnapshot.cc b/src/snapshot/mksnapshot.cc
-index f4362e5..e048e26 100644
+index f4362e5077..e048e26d76 100644
 --- a/src/snapshot/mksnapshot.cc
 +++ b/src/snapshot/mksnapshot.cc
 @@ -5,7 +5,7 @@
